@@ -1,36 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { CreateRouteDto } from '../dto/create-route.dto';
-import { UpdateRouteDto } from '../dto/update-route.dto';
 import { LiknossService } from 'src/modules/liknoss/services/liknoss.service';
 import LocationRepository from '../repositories/location.repository';
 import LocationModel from '../shemas/location.model';
+import RouteModel from '../shemas/route.model';
+import RouteRepository from '../repositories/route.repository';
 
 @Injectable()
 export class RoutesService {
   constructor(
     private readonly liknossService: LiknossService,
     private readonly locationsRepository: LocationRepository,
+    private readonly routeRepository: RouteRepository,
   ) {}
-
-  create(createRouteDto: CreateRouteDto) {
-    return 'This action adds a new route';
-  }
-
-  findAll() {
-    return `This action returns all routes`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} route`;
-  }
-
-  update(id: number, updateRouteDto: UpdateRouteDto) {
-    return `This action updates a #${id} route`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} route`;
-  }
 
   async findAllLocations(): Promise<LocationModel[]> {
     return this.locationsRepository.findAll();
@@ -47,5 +28,22 @@ export class RoutesService {
       });
     }
     return this.locationsRepository.findAll();
+  }
+
+  async findAllRoutes(): Promise<RouteModel[]> {
+    return this.routeRepository.findAll();
+  }
+
+  async fillDbRoutes() {
+    const routes: [any] = await this.liknossService.findAllRoutes();
+    await this.routeRepository.cleanRoutes();
+    for (let i = 0; i < routes.length; i++) {
+      await this.routeRepository.create({
+        loc_origin: routes[i].origin.idOrCode,
+        loc_destination: routes[i].destination.idOrCode,
+        description: routes[i].description,
+      });
+    }
+    return this.routeRepository.findAll();
   }
 }

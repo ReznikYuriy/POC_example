@@ -24,32 +24,4 @@ export default class LocationRepository {
       truncate: true,
     });
   }
-
-  /* async findOneById(id: number): Promise<ShippingEstimateInterface> {
-    return await this.shippingEstimateSchema.findOne({ where: { id } });
-  }
-
-  async findUserByEstimateId(estimate_id: number) {
-    const user = await this.shippingEstimateSchema.findOne({
-      where: { id: estimate_id },
-      attributes: ['id'],
-      include: [
-        {
-          model: ShippingRequest,
-          attributes: ['id'],
-          include: [
-            {
-              model: User,
-              attributes: ['id', 'email'],
-            },
-          ],
-        },
-      ],
-    });
-    return user;
-  }
-
-  async findByRequestId(id: string): Promise<ShippingEstimate> {
-    return this.shippingEstimateSchema.findOne({ where: { shipping_id: id } });
-  } */
 }

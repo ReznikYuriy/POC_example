@@ -15,4 +15,14 @@ export class LiknossService {
     );
     return result;
   }
+
+  async findAllRoutes() {
+    const result = await this.apiClient.request(
+      `analytic-routes`,
+      HttpMethods.GET,
+      '',
+      {},
+    );
+    return result;
+  }
 }

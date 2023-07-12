@@ -7,6 +7,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RoutesModule } from './routes/routes.module';
 import { LiknossModule } from './liknoss/liknoss.module';
 import LocationModel from './routes/shemas/location.model';
+import RouteModel from './routes/shemas/route.model';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import LocationModel from './routes/shemas/location.model';
       dialect: 'postgres',
       autoLoadModels: true,
       synchronize: true,
-      models: [LocationModel],
+      models: [LocationModel, RouteModel],
     }),
     CacheModule.register({
       isGlobal: true,

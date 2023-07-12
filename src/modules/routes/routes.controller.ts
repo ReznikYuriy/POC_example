@@ -1,18 +1,8 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { RoutesService } from './services/routes.service';
-import { CreateRouteDto } from './dto/create-route.dto';
-import { UpdateRouteDto } from './dto/update-route.dto';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import LocationModel from './shemas/location.model';
-import { CreateLocationDto } from './dto/create.location.dto';
+import { OutputLocationDto } from './dto/output.location.dto';
+import { OutputRouteDto } from './dto/output.route.dto';
 
 @ApiTags('routes')
 @Controller('routes')
@@ -21,10 +11,19 @@ export class RoutesController {
 
   @ApiOkResponse({
     status: 201,
-    type: [CreateLocationDto],
+    type: [OutputLocationDto],
   })
   @Get('locations')
   async findAllLocations() {
     return this.routesService.findAllLocations();
+  }
+
+  @ApiOkResponse({
+    status: 201,
+    type: [OutputRouteDto],
+  })
+  @Get('routes')
+  async findAllRoutes() {
+    return this.routesService.findAllRoutes();
   }
 }

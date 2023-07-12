@@ -6,10 +6,15 @@ import { LiknossModule } from '../liknoss/liknoss.module';
 import LocationRepository from './repositories/location.repository';
 import LocationModel from './shemas/location.model';
 import { SequelizeModule } from '@nestjs/sequelize';
+import RouteModel from './shemas/route.model';
+import RouteRepository from './repositories/route.repository';
 
 @Module({
-  imports: [LiknossModule, SequelizeModule.forFeature([LocationModel])],
+  imports: [
+    LiknossModule,
+    SequelizeModule.forFeature([LocationModel, RouteModel]),
+  ],
   controllers: [RoutesController, FillDBController],
-  providers: [RoutesService, LocationRepository],
+  providers: [RoutesService, LocationRepository, RouteRepository],
 })
 export class RoutesModule {}
