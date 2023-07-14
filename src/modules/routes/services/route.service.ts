@@ -6,7 +6,7 @@ import RouteModel from '../shemas/route.model';
 import RouteRepository from '../repositories/route.repository';
 
 @Injectable()
-export class RoutesService {
+export class RouteService {
   constructor(
     private readonly liknossService: LiknossService,
     private readonly locationsRepository: LocationRepository,

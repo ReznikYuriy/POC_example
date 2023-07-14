@@ -1,11 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
-import { RoutesService } from './services/routes.service';
+import { RouteService } from './services/route.service';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('fill_db')
 @Controller('fill_db')
 export class FillDBController {
-  constructor(private readonly routesService: RoutesService) {}
+  constructor(private readonly routesService: RouteService) {}
 
   @Get('locations')
   async fillLocations() {

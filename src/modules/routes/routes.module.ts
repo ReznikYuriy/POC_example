@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RoutesService } from './services/routes.service';
+import { RouteService } from './services/route.service';
 import { RoutesController } from './routes.controller';
 import { FillDBController } from './fill_db.controller';
 import { LiknossModule } from '../liknoss/liknoss.module';
@@ -8,13 +8,35 @@ import LocationModel from './shemas/location.model';
 import { SequelizeModule } from '@nestjs/sequelize';
 import RouteModel from './shemas/route.model';
 import RouteRepository from './repositories/route.repository';
+import { TripService } from './services/trip.service';
+import TripRepository from './repositories/trip.repository';
+import TripModel from './shemas/trip.model';
+import configs from 'src/configs';
+import { BullModule } from '@nestjs/bull';
+import { LiknossQueueProcessor } from './services/processor/liknoss.queue.processor';
 
 @Module({
   imports: [
     LiknossModule,
-    SequelizeModule.forFeature([LocationModel, RouteModel]),
+    SequelizeModule.forFeature([LocationModel, RouteModel, TripModel]),
+    BullModule.registerQueueAsync({
+      name: 'liknoss-queue',
+      useFactory: () => ({
+        redis: {
+          host: configs.redis.host,
+          port: Number(configs.redis.port),
+        },
+      }),
+    }),
   ],
   controllers: [RoutesController, FillDBController],
-  providers: [RoutesService, LocationRepository, RouteRepository],
+  providers: [
+    RouteService,
+    LocationRepository,
+    RouteRepository,
+    TripService,
+    TripRepository,
+    LiknossQueueProcessor,
+  ],
 })
 export class RoutesModule {}

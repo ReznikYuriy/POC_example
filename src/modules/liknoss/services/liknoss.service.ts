@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ApiService } from './api.service';
 import { HttpMethods } from '../enum/api.http.methods.enum';
+import { FindTripLiknossDto } from '../dto/find.trip.liknoss.dto';
 
 @Injectable()
 export class LiknossService {
@@ -22,6 +23,16 @@ export class LiknossService {
       HttpMethods.GET,
       '',
       {},
+    );
+    return result;
+  }
+
+  async findTrips(dto: FindTripLiknossDto) {
+    const result = await this.apiClient.request(
+      `trips`,
+      HttpMethods.POST,
+      '',
+      dto,
     );
     return result;
   }
