@@ -16,7 +16,7 @@ export default class RouteRepository {
 
   async findAll(): Promise<RouteModel[]> {
     return this.routeSchema.findAll({
-      attributes: ['loc_origin', 'loc_destination', 'description'],
+      attributes: ['id', 'loc_origin', 'loc_destination', 'description'],
     });
   }
 

@@ -5,6 +5,7 @@ import { OutputLocationDto } from './dto/output.location.dto';
 import { OutputRouteDto } from './dto/output.route.dto';
 import { TripService } from './services/trip.service';
 import { TripsQueryDto } from './dto/query.trip.dto';
+import { OutputTripDto } from './dto/output.trip.dto';
 
 @ApiTags('routes')
 @Controller('routes')
@@ -34,7 +35,7 @@ export class RoutesController {
 
   @ApiOkResponse({
     status: 201,
-    //type: [OutputRouteDto],
+    type: [OutputTripDto],
   })
   @Get('trips')
   async findTrips(@Query() query: TripsQueryDto) {

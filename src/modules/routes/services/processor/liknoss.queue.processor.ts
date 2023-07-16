@@ -10,14 +10,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { TripsQueryDto } from '../../dto/query.trip.dto';
 import { TripService } from '../trip.service';
+import { CreateTripDto } from '../../dto/create.trip.dto';
+import TripRepository from '../../repositories/trip.repository';
 
 @Injectable()
 @Processor('liknoss-queue')
 export class LiknossQueueProcessor {
   private readonly logger = new Logger(this.constructor.name);
   constructor(
-    private readonly tripSrvice: TripService,
-
+    private readonly tripService: TripService,
+    private readonly tripRepository: TripRepository,
     @InjectQueue('liknoss-queue')
     private queue: Queue,
   ) {}
@@ -51,7 +53,7 @@ export class LiknossQueueProcessor {
       `Processor:@Process - Request to Liknoss: From:${job.data.dto.location_origin} To:${job.data.dto.location_destination} Date:${job.data.dto.date}`,
     );
     try {
-      const result = await this.tripSrvice.getTripsFromLinkoss(job.data.dto);
+      const result = await this.tripService.getTripsFromLinkoss(job.data.dto);
       return result;
     } catch (error) {
       /* if (error.respose?.code !== 502 || job.data.counter > 5) {
@@ -64,6 +66,41 @@ export class LiknossQueueProcessor {
         job.opts,
       ); */
       this.logger.error('Bad Liknoss request.', error.stack);
+    }
+  }
+
+  @Process('read-write-db-trip')
+  async readWriteDbTrip(job: Job<{ tripBody: CreateTripDto }>) {
+    this.logger.log(
+      `Processor:@Process - Request to Postgres: From:${job.data.tripBody.loc_origin} To:${job.data.tripBody.loc_destination} Date:${job.data.tripBody.date_start} Company:${job.data.tripBody.company}`,
+    );
+    try {
+      //db check
+      const checkTripInDb = await this.tripRepository.findOne(
+        job.data.tripBody,
+      );
+      if (!checkTripInDb) {
+        await this.tripRepository.create(job.data.tripBody);
+        this.logger.verbose('CREATE TRIP IN DB');
+      } else if (
+        checkTripInDb.duration === job.data.tripBody.duration &&
+        checkTripInDb.price_basic === job.data.tripBody.price_basic &&
+        checkTripInDb.price_discount === job.data.tripBody.price_discount &&
+        checkTripInDb.date_start === job.data.tripBody.date_start
+      ) {
+        this.logger.verbose('TRIP IN DB ACTUAL');
+      } else {
+        await this.tripRepository.update(checkTripInDb?.id, {
+          duration: job.data.tripBody.duration,
+          price_basic: job.data.tripBody.price_basic,
+          price_discount: job.data.tripBody.price_discount,
+          date_end: job.data.tripBody.date_end,
+        });
+        this.logger.verbose('UPDATE TRIP IN DB');
+      }
+      //db check end
+    } catch (error) {
+      this.logger.error('Bad DB request.', error.stack);
     }
   }
 

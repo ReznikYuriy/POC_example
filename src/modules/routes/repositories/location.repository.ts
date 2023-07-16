@@ -18,6 +18,10 @@ export default class LocationRepository {
     return this.locationSchema.findAll({ attributes: ['id', 'name'] });
   }
 
+  async findAllByParams(where): Promise<LocationModel[]> {
+    return this.locationSchema.findAll(where);
+  }
+
   async cleanLocations() {
     await this.locationSchema.destroy({
       where: {},

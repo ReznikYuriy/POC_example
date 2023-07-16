@@ -42,12 +42,13 @@ export default class TripRepository {
         loc_origin,
         loc_destination,
         company,
-        date_start: {
+        date_start,
+        /* date_start: {
           [Op.between]: [
             new Date(date_start),
             new Date(new Date(date_start).setUTCHours(23, 59, 59, 999)),
           ],
-        },
+        }, */
       },
     });
   }

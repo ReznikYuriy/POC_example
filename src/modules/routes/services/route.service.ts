@@ -17,6 +17,10 @@ export class RouteService {
     return this.locationsRepository.findAll();
   }
 
+  async findAllLocByParams(where): Promise<LocationModel[]> {
+    return this.locationsRepository.findAllByParams(where);
+  }
+
   async fillDbLocations() {
     const locations: [any] = await this.liknossService.findAllLocations();
     await this.locationsRepository.cleanLocations();

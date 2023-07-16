@@ -10,6 +10,8 @@ import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { Op } from 'sequelize';
+import RouteModel from '../shemas/route.model';
 
 @Injectable()
 export class TripService {
@@ -29,44 +31,62 @@ export class TripService {
       passengers: query.passengers || 1,
       vehicles: query.vehicles || 0,
     };
-    //console.log({ dto });
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
-    console.log({ redisKey });
-    //console.log(redisKey.toString());
+    this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
     if (fromCache) {
       this.logger.verbose(' Return from Redis!');
       return fromCache;
     } else {
       this.logger.verbose(' Cache empty!');
-      await this.liknossQueue.add(
+      /* await this.liknossQueue.add(
         'get-trips-request',
         { dto },
         {
-          delay: 1000,
           removeOnComplete: true,
         },
-      );
+      ); */
       const fromDb = await this.tripRepository.findAll(
         query.location_origin,
         query.location_destination,
         query.date,
       );
-      //await this.cacheSet(redisKey, fromDb);
+      await this.cacheSet(redisKey, fromDb);
+      this.logger.verbose(' Return from Postgres!');
       return fromDb;
     }
   }
 
   async getTripsFromLinkoss(dto: TripsQueryDto) {
-    //------LIKNOSS
-    console.log({ dto });
+    const liknossTrips = await this.getLinkossTripsForRoute(dto);
+    for (const tripBody of liknossTrips) {
+      await this.liknossQueue.add(
+        'read-write-db-trip',
+        { tripBody },
+        {
+          removeOnComplete: true,
+        },
+      );
+    }
+    if (liknossTrips?.length > 0) {
+      this.cacheSet(
+        `${dto.location_origin}-${dto.location_destination}-${dto.date}`,
+        liknossTrips,
+      );
+      this.logger.log('CACHE UPDATED');
+    }
+  }
+
+  private async getLinkossTripsForRoute(
+    dto: TripsQueryDto,
+  ): Promise<TripModel[]> {
     const liknossReq = await this.liknossService.findTrips(
       this.prepareLiknossSearchBody(dto),
     );
+    const liknossTrips = [];
     const trips: [] = liknossReq['trips'];
     const companies: [] = liknossReq['companies'];
     if (trips) {
-      const liknossTrips = [];
       for (let i = 0; i < trips.length; i++) {
         const trip = trips[i];
         const tripBody: CreateTripDto = {
@@ -82,38 +102,9 @@ export class TripService {
             '',
         };
         liknossTrips.push(tripBody);
-        //db check
-        const checkTripInDb = await this.tripRepository.findOne(tripBody);
-        //console.log({ checkTripInDb });
-        if (!checkTripInDb) {
-          await this.tripRepository.create(tripBody);
-          this.logger.log('CREATE TRIP IN DB');
-        } else if (
-          checkTripInDb.duration === tripBody.duration &&
-          checkTripInDb.price_basic === tripBody.price_basic &&
-          checkTripInDb.price_discount === tripBody.price_discount
-        ) {
-          this.logger.log('TRIP IN DB ACTUAL');
-        } else {
-          await this.tripRepository.update(checkTripInDb?.id, {
-            duration: tripBody.duration,
-            price_basic: tripBody.price_basic,
-            price_discount: tripBody.price_discount,
-            date_end: tripBody.date_end,
-          });
-          this.logger.log('UPDATE TRIP IN DB');
-        }
-        //db check end
-      }
-      if (liknossTrips?.length > 0) {
-        this.cacheSet(
-          `${dto.location_origin}-${dto.location_destination}-${dto.date}`,
-          liknossTrips,
-        );
-        this.logger.log('CACHE UPDATED');
       }
     }
-    //-----------------------------------------
+    return liknossTrips;
   }
 
   private prepareLiknossSearchBody(query: TripsQueryDto): FindTripLiknossDto {
@@ -128,10 +119,147 @@ export class TripService {
   }
 
   async cacheSet(key: string, data: TripModel[]): Promise<void> {
-    //console.log({ key });
     await this.cacheService.set(key, data);
   }
   async getCache(key: string): Promise<any> {
     return await this.cacheService.get(key);
+  }
+
+  async fillDbTrips(): Promise<void> {
+    const locations = (
+      await this.routeService.findAllLocByParams({
+        where: { country: { [Op.iLike]: 'Greece' } },
+        attributes: ['id'],
+      })
+    ).map((loc) => loc.get({ plain: true }).id);
+    const routes = (await this.routeService.findAllRoutes())
+      .map((route) => route.get({ plain: true }))
+      .filter(
+        (route) =>
+          locations.includes(route.loc_origin) &&
+          locations.includes(route.loc_destination),
+      );
+    const favoriteRoutesIds = [
+      1148, 409, 1057, 16, 487, 164, 685, 396, 884, 79,
+    ].sort();
+    const favoriteDates = [
+      '2023-07-20',
+      '2023-08-01',
+      '2023-08-15',
+      '2023-09-01',
+      '2023-09-15',
+      '2023-10-01',
+      '2023-10-15',
+      '2023-11-01',
+      '2023-11-15',
+      '2023-12-01',
+      '2023-12-31',
+    ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const favoriteRoutes = routes.filter((r) =>
+      favoriteRoutesIds.includes(r.id),
+    );
+    for (let i = 0; i < favoriteRoutes.length; i++) {
+      let dummyRoutes = [];
+      if (i == 0) {
+        dummyRoutes = routes.filter(
+          (r) => r.id > 0 && r.id < favoriteRoutes[i].id,
+        );
+      } else if (i === favoriteRoutes.length - 1) {
+        dummyRoutes = routes.filter((r) => r.id > favoriteRoutes[i].id);
+      } else {
+        dummyRoutes = routes.filter(
+          (r) => r.id > favoriteRoutes[i - 1].id && r.id < favoriteRoutes[i].id,
+        );
+      }
+      for (let j = 1; j < favoriteDates.length; j++) {
+        const tripsForFavoriteRoute = await this.getLinkossTripsForRoute({
+          location_origin: favoriteRoutes[i].loc_origin,
+          location_destination: favoriteRoutes[i].loc_destination,
+          date: favoriteDates[j - 1],
+          passengers: 1,
+          vehicles: 0,
+        });
+        await this.generateTripsBodyByDate(
+          favoriteRoutes[i],
+          new Date(favoriteDates[j - 1]),
+          new Date(favoriteDates[j]),
+          tripsForFavoriteRoute,
+          false,
+        );
+        for (const dr of dummyRoutes) {
+          await this.generateTripsBodyByDate(
+            dr,
+            new Date(favoriteDates[j - 1]),
+            new Date(favoriteDates[j]),
+            tripsForFavoriteRoute,
+            true,
+          );
+        }
+      }
+    }
+  }
+  private async generateTripsBodyByDate(
+    route: RouteModel,
+    start_date: Date,
+    end_date: Date,
+    liknossTrips: TripModel[],
+    isFakeTrip: boolean,
+  ) {
+    let _date = start_date;
+    let daysAdd = 0;
+    while (_date < end_date) {
+      if (!isFakeTrip) {
+        for (const trip of liknossTrips) {
+          const tripBody = {
+            ...trip,
+            date_start: new Date(
+              new Date(trip.date_start).setDate(
+                new Date(trip.date_start).getDate() + daysAdd,
+              ),
+            ),
+            date_end: new Date(
+              new Date(trip.date_end).setDate(
+                new Date(trip.date_end).getDate() + daysAdd,
+              ),
+            ),
+          };
+          await this.liknossQueue.add(
+            'read-write-db-trip',
+            { tripBody },
+            {
+              removeOnComplete: true,
+            },
+          );
+        }
+      } else {
+        for (const trip of liknossTrips) {
+          const tripBody = {
+            ...trip,
+            loc_origin: route.loc_origin,
+            loc_destination: route.loc_destination,
+            date_start: new Date(
+              new Date(trip.date_start).setDate(
+                new Date(trip.date_start).getDate() + daysAdd,
+              ),
+            ),
+            date_end: new Date(
+              new Date(trip.date_end).setDate(
+                new Date(trip.date_end).getDate() + daysAdd,
+              ),
+            ),
+            //company: `[DummyData] ${trip.company}`,
+          };
+          await this.liknossQueue.add(
+            'read-write-db-trip',
+            { tripBody },
+            {
+              removeOnComplete: true,
+            },
+          );
+        }
+      }
+      daysAdd++;
+      _date = new Date(_date.setDate(_date.getDate() + 1));
+    }
   }
 }
