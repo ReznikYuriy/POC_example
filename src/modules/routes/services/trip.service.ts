@@ -262,4 +262,55 @@ export class TripService {
       _date = new Date(_date.setDate(_date.getDate() + 1));
     }
   }
+
+  async fillDbTrips2024(): Promise<void> {
+    const locations = (
+      await this.routeService.findAllLocByParams({
+        where: { country: { [Op.iLike]: 'Greece' } },
+        attributes: ['id'],
+      })
+    ).map((loc) => loc.get({ plain: true }).id);
+    const routes = (await this.routeService.findAllRoutes())
+      .map((route) => route.get({ plain: true }))
+      .filter(
+        (route) =>
+          locations.includes(route.loc_origin) &&
+          locations.includes(route.loc_destination),
+      );
+    for (let i = 0; i < routes.length; i++) {
+      const trips = await this.tripRepository.findAllByParams({
+        where: {
+          loc_origin: routes[i].loc_origin,
+          loc_destination: routes[i].loc_destination,
+        },
+      });
+      const daysAdd = 180;
+      for (const trip of trips) {
+        const { id, createdAt, updatedAt, ...tripParticular } = trip.get({
+          plain: true,
+        });
+        const tripBody = {
+          ...tripParticular,
+          date_start: new Date(
+            new Date(tripParticular.date_start).setDate(
+              new Date(tripParticular.date_start).getDate() + daysAdd,
+            ),
+          ),
+          date_end: new Date(
+            new Date(tripParticular.date_end).setDate(
+              new Date(tripParticular.date_end).getDate() + daysAdd,
+            ),
+          ),
+          //company: `[DummyData] ${trip.company}`,
+        };
+        await this.liknossQueue.add(
+          'read-write-db-trip',
+          { tripBody },
+          {
+            removeOnComplete: true,
+          },
+        );
+      }
+    }
+  }
 }

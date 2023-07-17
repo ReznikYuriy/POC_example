@@ -25,4 +25,9 @@ export class FillDBController {
   async fillTrips() {
     return this.tripService.fillDbTrips();
   }
+
+  @Get('trips-24')
+  async fillTrips2024() {
+    return this.tripService.fillDbTrips2024();
+  }
 }

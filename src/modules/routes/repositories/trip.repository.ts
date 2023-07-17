@@ -66,4 +66,8 @@ export default class TripRepository {
     //return this.findById(id);
     return updReq;
   }
+
+  async findAllByParams(where): Promise<TripModel[]> {
+    return this.tripSchema.findAll(where);
+  }
 }
