@@ -52,9 +52,9 @@ export default class TripModel extends Model<TripModel> {
   @Column({ type: DataType.INTEGER })
   price_discount: number;
 
-  @BelongsTo(() => LocationModel)
+  @BelongsTo(() => LocationModel, 'loc_origin')
   loc_orig: LocationModel;
 
-  @BelongsTo(() => LocationModel)
+  @BelongsTo(() => LocationModel, 'loc_destination')
   loc_dest: LocationModel;
 }
