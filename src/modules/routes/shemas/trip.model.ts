@@ -1,4 +1,12 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  Table,
+} from 'sequelize-typescript';
+import LocationModel from './location.model';
 
 @Table({ tableName: 'trips' })
 export default class TripModel extends Model<TripModel> {
@@ -10,12 +18,14 @@ export default class TripModel extends Model<TripModel> {
   })
   id: number;
 
+  @ForeignKey(() => LocationModel)
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
   loc_origin: string;
 
+  @ForeignKey(() => LocationModel)
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -41,4 +51,10 @@ export default class TripModel extends Model<TripModel> {
 
   @Column({ type: DataType.INTEGER })
   price_discount: number;
+
+  @BelongsTo(() => LocationModel)
+  loc_orig: LocationModel;
+
+  @BelongsTo(() => LocationModel)
+  loc_dest: LocationModel;
 }

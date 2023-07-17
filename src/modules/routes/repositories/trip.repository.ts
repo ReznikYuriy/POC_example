@@ -4,6 +4,7 @@ import TripModel from '../shemas/trip.model';
 import { Op } from 'sequelize';
 import { CreateTripDto } from '../dto/create.trip.dto';
 import { UpdateTripDto } from '../dto/update.trip.dto';
+import LocationModel from '../shemas/location.model';
 
 @Injectable()
 export default class TripRepository {
@@ -32,6 +33,10 @@ export default class TripRepository {
           ],
         },
       },
+      include: [
+        { model: LocationModel, as: 'loc_orig', attributes: ['name'] },
+        { model: LocationModel, as: 'loc_dest', attributes: ['name'] },
+      ],
     });
   }
 
