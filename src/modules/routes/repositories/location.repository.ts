@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CreateLocationDto } from '../dto/create.location.dto';
 import LocationModel from '../shemas/location.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export default class LocationRepository {
@@ -15,7 +16,11 @@ export default class LocationRepository {
   }
 
   async findAll(): Promise<LocationModel[]> {
-    return this.locationSchema.findAll({ attributes: ['id', 'name'] });
+    return this.locationSchema.findAll({
+      where: { country: { [Op.iLike]: 'Greece' } },
+      attributes: ['id', 'name'],
+      order: [['name', 'ASC']],
+    });
   }
 
   async findAllByParams(where): Promise<LocationModel[]> {

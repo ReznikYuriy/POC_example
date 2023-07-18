@@ -1,4 +1,12 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  Table,
+} from 'sequelize-typescript';
+import LocationModel from './location.model';
 
 @Table({ tableName: 'routes' })
 export default class RouteModel extends Model<RouteModel> {
@@ -10,12 +18,14 @@ export default class RouteModel extends Model<RouteModel> {
   })
   id: number;
 
+  @ForeignKey(() => LocationModel)
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
   loc_origin: string;
 
+  @ForeignKey(() => LocationModel)
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -27,4 +37,10 @@ export default class RouteModel extends Model<RouteModel> {
     allowNull: false,
   })
   description: string;
+
+  @BelongsTo(() => LocationModel, 'loc_origin')
+  loc_orig: LocationModel;
+
+  @BelongsTo(() => LocationModel, 'loc_destination')
+  loc_dest: LocationModel;
 }
