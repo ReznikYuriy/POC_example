@@ -58,4 +58,11 @@ export class FindTripLiknossDto {
   })
   @IsObject()
   quoteRequest: QuoteRequestDto;
+
+  @ApiProperty({
+    required: false,
+    type: Boolean,
+  })
+  @IsBoolean()
+  fetchVehicleAccommodations?: boolean;
 }

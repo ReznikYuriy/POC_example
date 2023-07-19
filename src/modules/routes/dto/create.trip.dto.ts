@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsString } from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateTripDto {
   @ApiProperty({
@@ -49,4 +49,12 @@ export class CreateTripDto {
   })
   @IsInt()
   price_discount: number;
+
+  @ApiProperty({
+    required: false,
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  company_id?: string;
 }

@@ -86,7 +86,10 @@ export class LiknossQueueProcessor {
         checkTripInDb.duration === job.data.tripBody.duration &&
         checkTripInDb.price_basic === job.data.tripBody.price_basic &&
         checkTripInDb.price_discount === job.data.tripBody.price_discount &&
-        checkTripInDb.date_start === job.data.tripBody.date_start
+        checkTripInDb.date_start.getTime() ===
+          new Date(job.data.tripBody.date_start).getTime() &&
+        checkTripInDb.date_end.getTime() ===
+          new Date(job.data.tripBody.date_end).getTime()
       ) {
         this.logger.verbose('TRIP IN DB ACTUAL');
       } else {
@@ -94,6 +97,7 @@ export class LiknossQueueProcessor {
           duration: job.data.tripBody.duration,
           price_basic: job.data.tripBody.price_basic,
           price_discount: job.data.tripBody.price_discount,
+          date_start: job.data.tripBody.date_start,
           date_end: job.data.tripBody.date_end,
         });
         this.logger.verbose('UPDATE TRIP IN DB');

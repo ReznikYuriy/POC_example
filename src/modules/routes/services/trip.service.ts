@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 import { LiknossService } from 'src/modules/liknoss/services/liknoss.service';
 import { RouteService } from './route.service';
 import TripRepository from '../repositories/trip.repository';
@@ -12,6 +12,7 @@ import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Op } from 'sequelize';
 import RouteModel from '../shemas/route.model';
+import { TripCompanyQueryDto } from '../dto/query.trip.company.dto';
 
 @Injectable()
 export class TripService {
@@ -114,6 +115,7 @@ export class TripService {
       destinationIdOrCode: query.location_destination,
       sorting: 'BY_DEPARTURE_TIME',
       availabilityInformation: true,
+      fetchVehicleAccommodations: true,
       quoteRequest: { passengers: query.passengers, vehicles: query.vehicles },
     };
   }
@@ -312,5 +314,89 @@ export class TripService {
         );
       }
     }
+  }
+
+  async searchTripWithDetails(query: TripCompanyQueryDto): Promise<any> {
+    const { company, ...dto } = {
+      ...query,
+      passengers: query.passengers || 1,
+      vehicles: query.vehicles || 0,
+    };
+    const liknossReq = await this.liknossService.findTrips(
+      this.prepareLiknossSearchBody(dto),
+    );
+    const liknossTrips = [];
+    const trips: [] = liknossReq['trips'];
+    const companies: [] = liknossReq['companies'];
+    if (trips) {
+      for (let i = 0; i < trips.length; i++) {
+        const trip = trips[i];
+        const tripBody: CreateTripDto = {
+          loc_origin: trip['origin']['idOrCode'],
+          loc_destination: trip['destination']['idOrCode'],
+          date_start: trip['departureDateTimeWithTimezone'],
+          date_end: trip['arrivalDateTimeWithTimezone'],
+          duration: Number(trip['duration']),
+          price_basic: Number(trip['basicPrice']),
+          price_discount: Number(trip['discountPrice']),
+          company:
+            companies[`${trip['vessel']['company']['abbreviation']}`]['name'] ||
+            '',
+          company_id: trip['vessel']['company']['abbreviation'],
+        };
+        //console.log({ tripBody });
+        liknossTrips.push(tripBody);
+      }
+    }
+    //updateDb
+    for (const trip of liknossTrips) {
+      const { company_id, ...tripBody } = trip;
+      await this.liknossQueue.add(
+        'read-write-db-trip',
+        { tripBody },
+        {
+          removeOnComplete: true,
+        },
+      );
+    }
+    //updateCache
+    if (liknossTrips?.length > 0) {
+      this.cacheSet(
+        `${dto.location_origin}-${dto.location_destination}-${dto.date}`,
+        liknossTrips,
+      );
+      this.logger.log('CACHE UPDATED');
+    }
+
+    const tripToOrder = liknossTrips.find((tr) => tr.company === company);
+    console.log({ tripToOrder });
+    if (!tripToOrder) {
+      throw new ConflictException('Trip for these parameters is empty.');
+    }
+    const tripCompany = companies[tripToOrder.company_id];
+    console.log({ tripCompany });
+    const liknossTrip = trips.find(
+      (tr) =>
+        tr['vessel']['company']['abbreviation'] === tripToOrder.company_id,
+    );
+    //////////////////
+    const tripAccommodations: any[] = (
+      liknossTrip['accommodationAvailabilities'] as []
+    ).map((ac) => {
+      return {
+        accommodation_id: ac['accommodation']['idOrCode'],
+        availabilityType: ac['availabilityType'],
+        adultBasePrice: +ac['adultBasePrice'],
+        wholeBerthAvailability: +ac['wholeBerthAvailability'],
+        maleBerthAvailability: +ac['maleBerthAvailability'],
+        femaleBerthAvailability: +ac['femaleBerthAvailability'],
+      };
+    });
+    ////////////////////
+    return {
+      trip: { ...tripToOrder, accommodations: tripAccommodations },
+      liknoss_trip: liknossTrip,
+      company: tripCompany,
+    };
   }
 }
