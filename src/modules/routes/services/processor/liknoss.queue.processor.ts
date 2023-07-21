@@ -12,6 +12,7 @@ import { TripsQueryDto } from '../../dto/query.trip.dto';
 import { TripService } from '../trip.service';
 import { CreateTripDto } from '../../dto/create.trip.dto';
 import TripRepository from '../../repositories/trip.repository';
+import { Op } from 'sequelize';
 
 @Injectable()
 @Processor('liknoss-queue')
@@ -114,4 +115,52 @@ export class LiknossQueueProcessor {
     await this.queue.clean(0, 'failed');
     await this.queue.clean(0, 'completed');
   } */
+
+  @Process('read-write-db-trips-cache')
+  async readWriteDbTripsCache(
+    job: Job<{
+      location_origin: string;
+      location_destination: string;
+      date: string;
+      liknossTrips: CreateTripDto[];
+    }>,
+  ) {
+    this.logger.log(`Processor:@Process - Update Db&Cache from Liknoss.`);
+    try {
+      //clean trips in db
+      await this.tripRepository.delAllByParams({
+        where: {
+          loc_origin: job.data.location_origin,
+          loc_destination: job.data.location_destination,
+          date_start: {
+            [Op.between]: [
+              new Date(job.data.date).setUTCHours(0, 0, 0, 0),
+              new Date(new Date(job.data.date).setUTCHours(23, 59, 59, 999)),
+            ],
+          },
+        },
+      });
+      const allPromises = [];
+      for (let i = 0; i < job.data.liknossTrips.length; i++) {
+        allPromises.push(this.tripRepository.create(job.data.liknossTrips[i]));
+      }
+      const outcomes = await Promise.allSettled(allPromises);
+      const tripsForRedis = (
+        await this.tripRepository.findAll(
+          job.data.location_origin,
+          job.data.location_destination,
+          job.data.date,
+        )
+      ).map((el) => {
+        return el.get({ plain: true });
+      });
+      await this.tripService.cacheSet(
+        `${job.data.location_origin}-${job.data.location_destination}-${job.data.date}`,
+        tripsForRedis,
+      );
+      //db check end
+    } catch (error) {
+      this.logger.error('Bad DB request.', error.stack);
+    }
+  }
 }

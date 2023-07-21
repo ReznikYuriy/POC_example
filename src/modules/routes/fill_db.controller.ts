@@ -21,13 +21,13 @@ export class FillDBController {
     return this.routesService.fillDbRoutes();
   }
 
-  @Get('trips')
+  /* @Get('trips')
   async fillTrips() {
     return this.tripService.fillDbTrips();
-  }
+  } */
 
-  @Get('trips-24')
+  /* @Get('trips-24')
   async fillTrips2024() {
     return this.tripService.fillDbTrips2024();
-  }
+  } */
 }

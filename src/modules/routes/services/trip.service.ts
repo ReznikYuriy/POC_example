@@ -26,18 +26,43 @@ export class TripService {
     private liknossQueue: Queue,
   ) {}
 
-  async searchTrips(query: TripsQueryDto): Promise<TripModel[]> {
+  async searchTrips(
+    query: TripsQueryDto,
+  ): Promise<{ trips: TripModel[]; from: string }> {
     const dto = {
       ...query,
       passengers: query.passengers || 1,
       vehicles: query.vehicles || 0,
+      isRandom: query.isRandom || false,
     };
+    console.log({ dto });
+    if (
+      (typeof dto.isRandom === 'boolean' && dto.isRandom === true) ||
+      (typeof dto.isRandom === 'string' && dto.isRandom === 'true')
+    ) {
+      const randomIntFromInterval = (min: number, max: number) => {
+        const num = Math.floor(Math.random() * (max - min + 1) + min);
+        if (num < 10) {
+          return '0' + num;
+        }
+        return num;
+      };
+      const routes = await this.routeService.findAllRoutes();
+      const currRoute = routes[Math.floor(Math.random() * routes.length)];
+      dto.location_origin = currRoute.loc_origin;
+      dto.location_destination = currRoute.loc_destination;
+      dto.date = `2023-${randomIntFromInterval(7, 12)}-${randomIntFromInterval(
+        1,
+        30,
+      )}`;
+    }
+    console.log({ dto });
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
     this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
     if (fromCache) {
       this.logger.verbose(' Return from Redis!');
-      return fromCache;
+      return { trips: fromCache, from: 'Redis' };
     } else {
       this.logger.verbose(' Cache empty!');
       /* await this.liknossQueue.add(
@@ -48,13 +73,13 @@ export class TripService {
         },
       ); */
       const fromDb = await this.tripRepository.findAll(
-        query.location_origin,
-        query.location_destination,
-        query.date,
+        dto.location_origin,
+        dto.location_destination,
+        dto.date,
       );
       await this.cacheSet(redisKey, fromDb);
       this.logger.verbose(' Return from Postgres!');
-      return fromDb;
+      return { trips: fromDb, from: 'Postgres' };
     }
   }
 
@@ -127,7 +152,7 @@ export class TripService {
     return await this.cacheService.get(key);
   }
 
-  async fillDbTrips(): Promise<void> {
+  /* async fillDbTrips(): Promise<void> {
     const locations = (
       await this.routeService.findAllLocByParams({
         where: { country: { [Op.iLike]: 'Greece' } },
@@ -199,8 +224,8 @@ export class TripService {
         }
       }
     }
-  }
-  private async generateTripsBodyByDate(
+  } */
+  /* private async generateTripsBodyByDate(
     route: RouteModel,
     start_date: Date,
     end_date: Date,
@@ -263,9 +288,9 @@ export class TripService {
       daysAdd++;
       _date = new Date(_date.setDate(_date.getDate() + 1));
     }
-  }
+  } */
 
-  async fillDbTrips2024(): Promise<void> {
+  /* async fillDbTrips2024(): Promise<void> {
     const locations = (
       await this.routeService.findAllLocByParams({
         where: { country: { [Op.iLike]: 'Greece' } },
@@ -314,7 +339,7 @@ export class TripService {
         );
       }
     }
-  }
+  } */
 
   async searchTripWithDetails(query: TripCompanyQueryDto): Promise<any> {
     const { company, ...dto } = {
@@ -322,6 +347,7 @@ export class TripService {
       passengers: query.passengers || 1,
       vehicles: query.vehicles || 0,
     };
+    const { location_origin, location_destination, date } = dto;
     const liknossReq = await this.liknossService.findTrips(
       this.prepareLiknossSearchBody(dto),
     );
@@ -344,30 +370,19 @@ export class TripService {
             '',
           company_id: trip['vessel']['company']['abbreviation'],
         };
-        //console.log({ tripBody });
         liknossTrips.push(tripBody);
       }
     }
-    //updateDb
-    for (const trip of liknossTrips) {
-      const { company_id, ...tripBody } = trip;
-      await this.liknossQueue.add(
-        'read-write-db-trip',
-        { tripBody },
-        {
-          removeOnComplete: true,
-        },
-      );
-    }
-    //updateCache
-    if (liknossTrips?.length > 0) {
-      this.cacheSet(
-        `${dto.location_origin}-${dto.location_destination}-${dto.date}`,
-        liknossTrips,
-      );
-      this.logger.log('CACHE UPDATED');
-    }
 
+    await this.liknossQueue.add(
+      'read-write-db-trips-cache',
+      { location_origin, location_destination, date, liknossTrips },
+      {
+        removeOnComplete: true,
+      },
+    );
+    console.log(liknossTrips);
+    console.log(company);
     const tripToOrder = liknossTrips.find((tr) => tr.company === company);
     console.log({ tripToOrder });
     if (!tripToOrder) {

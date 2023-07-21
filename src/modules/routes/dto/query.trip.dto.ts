@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class TripsQueryDto {
   @ApiProperty({
@@ -42,4 +48,12 @@ export class TripsQueryDto {
     })
     @IsInt()
     pets?: number; */
+
+  @ApiProperty({
+    required: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isRandom?: boolean;
 }

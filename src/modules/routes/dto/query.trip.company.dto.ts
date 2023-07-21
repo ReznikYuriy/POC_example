@@ -1,8 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
-import { TripsQueryDto } from './query.trip.dto';
+import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
 
-export class TripCompanyQueryDto extends TripsQueryDto {
+export class TripCompanyQueryDto {
+  @ApiProperty({
+    type: String,
+  })
+  @IsString()
+  location_origin: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  @IsString()
+  location_destination: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  @IsDateString()
+  date: string;
+
+  @ApiProperty({
+    required: false,
+    type: Number,
+  })
+  @IsOptional()
+  @IsInt()
+  passengers?: number;
+
+  @ApiProperty({
+    required: false,
+    type: Number,
+  })
+  @IsOptional()
+  @IsInt()
+  vehicles?: number;
+
+  /* @ApiProperty({
+      required: false,
+      type: Number,
+    })
+    @IsInt()
+    pets?: number; */
   @ApiProperty({
     type: String,
   })

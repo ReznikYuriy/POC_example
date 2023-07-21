@@ -75,4 +75,8 @@ export default class TripRepository {
   async findAllByParams(where): Promise<TripModel[]> {
     return this.tripSchema.findAll(where);
   }
+
+  async delAllByParams(where): Promise<number> {
+    return this.tripSchema.destroy(where);
+  }
 }
