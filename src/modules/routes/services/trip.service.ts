@@ -47,11 +47,25 @@ export class TripService {
         }
         return num;
       };
-      const routes = await this.routeService.findAllRoutes();
-      const currRoute = routes[Math.floor(Math.random() * routes.length)];
+      //const routes = await this.routeService.findAllRoutes();
+      const locations = (
+        await this.routeService.findAllLocByParams({
+          where: { country: { [Op.iLike]: 'Greece' } },
+          attributes: ['id'],
+        })
+      ).map((loc) => loc.get({ plain: true }).id);
+      const routes = (await this.routeService.findAllRoutes())
+        .map((route) => route.get({ plain: true }))
+        .filter(
+          (route) =>
+            locations.includes(route.loc_origin) &&
+            locations.includes(route.loc_destination),
+        );
+      const currRoute =
+        routes[Math.floor(Math.random() * 30 /* routes.length */)];
       dto.location_origin = currRoute.loc_origin;
       dto.location_destination = currRoute.loc_destination;
-      dto.date = `2023-${randomIntFromInterval(7, 12)}-${randomIntFromInterval(
+      dto.date = `2023-${randomIntFromInterval(10, 12)}-${randomIntFromInterval(
         1,
         30,
       )}`;
