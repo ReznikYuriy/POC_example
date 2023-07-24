@@ -47,7 +47,6 @@ export class TripService {
         }
         return num;
       };
-      //const routes = await this.routeService.findAllRoutes();
       const locations = (
         await this.routeService.findAllLocByParams({
           where: { country: { [Op.iLike]: 'Greece' } },
@@ -411,19 +410,53 @@ export class TripService {
     //////////////////
     const tripAccommodations: any[] = (
       liknossTrip['accommodationAvailabilities'] as []
-    ).map((ac) => {
-      return {
-        accommodation_id: ac['accommodation']['idOrCode'],
-        availabilityType: ac['availabilityType'],
-        adultBasePrice: +ac['adultBasePrice'],
-        wholeBerthAvailability: +ac['wholeBerthAvailability'],
-        maleBerthAvailability: +ac['maleBerthAvailability'],
-        femaleBerthAvailability: +ac['femaleBerthAvailability'],
-      };
-    });
+    )
+      .map((ac) => {
+        return {
+          accommodation_id: ac['accommodation']['idOrCode'],
+          availabilityType: ac['availabilityType'],
+          adultBasePrice: +ac['adultBasePrice'],
+          wholeBerthAvailability: +ac['wholeBerthAvailability'],
+          maleBerthAvailability: +ac['maleBerthAvailability'],
+          femaleBerthAvailability: +ac['femaleBerthAvailability'],
+        };
+      })
+      .map((acc) => {
+        if (
+          (
+            tripCompany['accommodations']['passengers'] as 'object'
+          ).hasOwnProperty(`${acc['accommodation_id']}`)
+        ) {
+          return {
+            ...acc,
+            type: 'passengers',
+            name: tripCompany['accommodations']['passengers'][
+              `${acc['accommodation_id']}`
+            ]['name'],
+          };
+        } else if (
+          (
+            tripCompany['accommodations']['vehicles'] as 'object'
+          ).hasOwnProperty(`${acc['accommodation_id']}`)
+        ) {
+          return {
+            ...acc,
+            type: 'vehicles',
+            name: tripCompany['accommodations']['vehicles'][
+              `${acc['accommodation_id']}`
+            ]['name'],
+          };
+        }
+      });
+
     ////////////////////
     return {
-      trip: { ...tripToOrder, accommodations: tripAccommodations },
+      trip: {
+        ...tripToOrder,
+        accommodations: tripAccommodations,
+        basicPriceAnalysis: liknossTrip['basicPriceAnalysis'],
+        discountPriceAnalysis: liknossTrip['discountPriceAnalysis'],
+      },
       liknoss_trip: liknossTrip,
       company: tripCompany,
     };
