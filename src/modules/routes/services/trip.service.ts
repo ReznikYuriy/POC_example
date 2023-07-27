@@ -13,6 +13,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Op } from 'sequelize';
 import RouteModel from '../shemas/route.model';
 import { TripCompanyQueryDto } from '../dto/query.trip.company.dto';
+import { GtfsService } from 'src/modules/gtfs/services/gtfs.service';
 
 @Injectable()
 export class TripService {
@@ -24,6 +25,7 @@ export class TripService {
     @Inject(CACHE_MANAGER) private cacheService: Cache,
     @InjectQueue('liknoss-queue')
     private liknossQueue: Queue,
+    private readonly gtfsService: GtfsService,
   ) {}
 
   async searchTrips(
@@ -74,6 +76,7 @@ export class TripService {
     this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
     if (fromCache) {
+      await this.gtfsService.validationGtfsTrip(fromCache);
       this.logger.verbose(' Return from Redis!');
       return { trips: fromCache, from: 'Redis' };
     } else {

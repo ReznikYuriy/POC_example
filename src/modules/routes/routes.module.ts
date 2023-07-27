@@ -14,10 +14,12 @@ import TripModel from './shemas/trip.model';
 import configs from 'src/configs';
 import { BullModule } from '@nestjs/bull';
 import { LiknossQueueProcessor } from './services/processor/liknoss.queue.processor';
+import { GtfsModule } from '../gtfs/gtfs.module';
 
 @Module({
   imports: [
     LiknossModule,
+    GtfsModule,
     SequelizeModule.forFeature([LocationModel, RouteModel, TripModel]),
     BullModule.registerQueueAsync({
       name: 'liknoss-queue',

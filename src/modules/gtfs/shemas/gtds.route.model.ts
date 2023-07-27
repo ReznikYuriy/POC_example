@@ -1,12 +1,4 @@
-import {
-  BelongsTo,
-  Column,
-  DataType,
-  ForeignKey,
-  Model,
-  Table,
-} from 'sequelize-typescript';
-import GtfsAgencyModel from './gtds.agency.model ';
+import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'gtfs_routes' })
 export default class GtfsRouteModel extends Model<GtfsRouteModel> {
@@ -18,7 +10,6 @@ export default class GtfsRouteModel extends Model<GtfsRouteModel> {
   })
   id: number;
 
-  @ForeignKey(() => GtfsAgencyModel)
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -63,7 +54,4 @@ export default class GtfsRouteModel extends Model<GtfsRouteModel> {
 
   @Column({ type: DataType.INTEGER })
   route_type: number;
-
-  @BelongsTo(() => GtfsAgencyModel)
-  company: GtfsAgencyModel;
 }

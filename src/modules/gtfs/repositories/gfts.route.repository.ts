@@ -15,31 +15,21 @@ export default class GftsRouteRepository {
     return this.routeSchema.create(body);
   }
 
-  /* async findAll(): Promise<RouteModel[]> {
-    return this.routeSchema.findAll({
-      attributes: ['id', 'loc_origin', 'loc_destination', 'description'],
-      order: [['description', 'ASC']],
-      include: [
-        {
-          model: LocationModel,
-          as: 'loc_orig',
-          attributes: ['name', 'country'],
-          where: { country: { [Op.iLike]: 'Greece' } },
-        },
-        {
-          model: LocationModel,
-          as: 'loc_dest',
-          attributes: ['name', 'country'],
-          where: { country: { [Op.iLike]: 'Greece' } },
-        },
-      ],
+  async findByParams(
+    agency_id: string,
+    loc_origin: string,
+    loc_destination: string,
+    dep_time: string,
+    arr_time: string,
+  ): Promise<GtfsRouteModel> {
+    return this.routeSchema.findOne({
+      where: {
+        agency: { [Op.iLike]: agency_id },
+        loc_origin_name: { [Op.iLike]: loc_origin },
+        loc_destination_name: { [Op.iLike]: loc_destination },
+        departure_time: dep_time,
+        arrival_time: arr_time,
+      },
     });
   }
-
-  async cleanRoutes() {
-    await this.routeSchema.destroy({
-      where: {},
-      truncate: true,
-    });
-  } */
 }

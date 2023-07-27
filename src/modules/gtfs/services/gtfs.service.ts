@@ -4,6 +4,7 @@ import GftsRouteRepository from '../repositories/gfts.route.repository';
 import { CreateGtfsRouteDto } from '../dto/create.gtfs.route.dto';
 import GftsAgencyRepository from '../repositories/gfts.agency.repository';
 import { CreateGtfsAgencyDto } from '../dto/create.gtfs.agency.dto';
+import TripModel from 'src/modules/routes/shemas/trip.model';
 
 @Injectable()
 export class GtfsService {
@@ -97,5 +98,39 @@ export class GtfsService {
       }
     }
     return csvJson;
+  }
+
+  async validationGtfsTrip(trips: TripModel[]): Promise<boolean> {
+    const getTimeToString = (_date: Date): string => {
+      const date = new Date(_date);
+      //console.log({ date });
+      //console.log(typeof date);
+      const hh = date.getHours() < 10 ? '0' + date.getHours() : date.getHours();
+      const mm =
+        date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes();
+      const ss =
+        date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds();
+      return `${hh}:${mm}:${ss}`;
+    };
+    for (let i = 0; i < trips.length; i++) {
+      const trip = trips[i]; /* .get({ plain: true }) */
+      console.log(trip.company_id);
+      console.log(trip.loc_orig.name);
+      console.log(trip.loc_dest.name);
+      console.log(getTimeToString(trip.date_start));
+      console.log(getTimeToString(trip.date_end));
+      const gtfsTrip = await this.gftsRouteRepository.findByParams(
+        trip.company_id,
+        trip.loc_orig.name,
+        trip.loc_dest.name,
+        getTimeToString(trip.date_start),
+        getTimeToString(trip.date_end),
+      );
+      console.log({ gtfsTrip });
+      if (!gtfsTrip) {
+        return false;
+      }
+    }
+    return true;
   }
 }
