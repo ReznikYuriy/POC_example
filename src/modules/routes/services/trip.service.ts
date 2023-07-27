@@ -136,6 +136,7 @@ export class TripService {
           duration: Number(trip['duration']),
           price_basic: Number(trip['basicPrice']),
           price_discount: Number(trip['discountPrice']),
+          company_id: trip['vessel']['company']['abbreviation'],
           company:
             companies[`${trip['vessel']['company']['abbreviation']}`]['name'] ||
             '',
@@ -460,5 +461,25 @@ export class TripService {
       liknoss_trip: liknossTrip,
       company: tripCompany,
     };
+  }
+
+  async fillCompanyId() {
+    const companies: [any] = await this.liknossService.findAllCompanies();
+
+    console.log({ companies });
+    const trips = await this.tripRepository.findAllByParams({
+      where: { company_id: null },
+    });
+    for (let i = 0; i < trips.length; i++) {
+      const company = companies.find(
+        (c) =>
+          (c['description'] as 'string').toLowerCase() ===
+          trips[i].company.toLowerCase(),
+      );
+      await this.tripRepository.update(trips[i].id, {
+        company_id: company['abbreviation'],
+      });
+    }
+    console.log('Update Complete!');
   }
 }

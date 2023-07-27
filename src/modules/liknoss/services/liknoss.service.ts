@@ -27,6 +27,16 @@ export class LiknossService {
     return result;
   }
 
+  async findAllCompanies() {
+    const result = await this.apiClient.request(
+      `companies`,
+      HttpMethods.GET,
+      '',
+      {},
+    );
+    return result;
+  }
+
   async findTrips(dto: FindTripLiknossDto) {
     const result = await this.apiClient.request(
       `trips`,

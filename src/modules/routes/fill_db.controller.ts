@@ -30,4 +30,9 @@ export class FillDBController {
   async fillTrips2024() {
     return this.tripService.fillDbTrips2024();
   } */
+
+  @Get('add_company_id')
+  async fillCompanyId() {
+    return this.tripService.fillCompanyId();
+  }
 }

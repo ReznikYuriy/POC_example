@@ -51,10 +51,10 @@ export class CreateTripDto {
   price_discount: number;
 
   @ApiProperty({
-    required: false,
+    //required: false,
     type: String,
   })
-  @IsOptional()
+  //@IsOptional()
   @IsString()
-  company_id?: string;
+  company_id: string;
 }

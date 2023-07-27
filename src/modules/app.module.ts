@@ -9,6 +9,9 @@ import RouteModel from './routes/shemas/route.model';
 import TripModel from './routes/shemas/trip.model';
 import * as redisStore from 'cache-manager-redis-store';
 import { BullModule } from '@nestjs/bull';
+import { GtfsModule } from './gtfs/gtfs.module';
+import GtfsRouteModel from './gtfs/shemas/gtds.route.model';
+import GtfsAgencyModel from './gtfs/shemas/gtds.agency.model ';
 
 @Module({
   imports: [
@@ -17,7 +20,13 @@ import { BullModule } from '@nestjs/bull';
       dialect: 'postgres',
       autoLoadModels: true,
       synchronize: true,
-      models: [LocationModel, RouteModel, TripModel],
+      models: [
+        LocationModel,
+        RouteModel,
+        TripModel,
+        GtfsRouteModel,
+        GtfsAgencyModel,
+      ],
     }),
     CacheModule.register({
       isGlobal: true,
@@ -34,6 +43,7 @@ import { BullModule } from '@nestjs/bull';
     }),
     RoutesModule,
     LiknossModule,
+    GtfsModule,
   ],
   controllers: [],
   providers: [],

@@ -52,6 +52,14 @@ export class UpdateTripDto {
 
   @ApiProperty({
     required: false,
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  company_id?: string;
+
+  @ApiProperty({
+    required: false,
     type: Number,
   })
   @IsOptional()

@@ -46,6 +46,11 @@ export default class TripModel extends Model<TripModel> {
   })
   company: string;
 
+  @Column({
+    type: DataType.STRING,
+  })
+  company_id: string;
+
   @Column({ type: DataType.INTEGER })
   price_basic: number;
 
