@@ -82,6 +82,17 @@ export class TripService {
       const favoriteRoutesIds = [
         1148, 409, 1057, 16, 487, 164, 685, 396, 884, 79,
       ].sort();
+      const favoriteRoutesLoc = [
+        { location_origin: 'JMK', location_destination: 'JTR' }, //Mykonos-Santorini (Thira)
+        { location_origin: 'JNX', location_destination: 'JTR' }, //Naxos-Santorini (Thira)
+        { location_origin: 'PAS', location_destination: 'JMK' }, //Paros-Mykonos
+        { location_origin: 'JTR', location_destination: 'JSH' }, //Santorini (Thira)-Crete (Sitia)
+        { location_origin: 'JTR', location_destination: 'PAS' }, //Santorini (Thira)-Paros
+        { location_origin: 'SIF', location_destination: 'MLO' }, //Sifnos-Milos
+        { location_origin: 'IOS', location_destination: 'JMK' }, //Ios-Mykonos
+        { location_origin: 'IOS', location_destination: 'JTR' }, //Ios-Santorini (Thira)
+        { location_origin: 'MLO', location_destination: 'JNX' }, //Milos-Naxos
+      ];
       const favoriteDates = [
         '2023-07-20',
         '2023-08-01',
@@ -94,9 +105,20 @@ export class TripService {
         '2023-11-15',
         '2023-12-01',
       ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      const favoriteRoutes = routes.filter((r) =>
+      /* const favoriteRoutes = routes.filter((r) =>
         favoriteRoutesIds.includes(r.id),
-      );
+      ); */
+      const favoriteRoutes = [];
+      for (let i = 0; i < favoriteRoutesLoc.length; i++) {
+        const route = routes.find(
+          (el) =>
+            el.loc_origin === favoriteRoutesLoc[i].location_origin &&
+            el.loc_destination === favoriteRoutesLoc[i].location_destination,
+        );
+        if (route) {
+          favoriteRoutes.push(route);
+        }
+      }
       const randIndexRoute = Math.floor(Math.random() * favoriteRoutes.length);
       console.log({ randIndexRoute });
       const randIndexDate = Math.floor(Math.random() * favoriteDates.length);
