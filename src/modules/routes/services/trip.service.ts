@@ -31,6 +31,9 @@ export class TripService {
   async searchTrips(
     query: TripsQueryDto,
   ): Promise<{ trips: TripModel[]; from: string }> {
+    let isUseGtfsForTesting = true;
+    const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
+    console.log({ randomNumber });
     const dto = {
       ...query,
       passengers: query.passengers || 1,
@@ -42,7 +45,12 @@ export class TripService {
       (typeof dto.isRandom === 'boolean' && dto.isRandom === true) ||
       (typeof dto.isRandom === 'string' && dto.isRandom === 'true')
     ) {
-      const randomIntFromInterval = (min: number, max: number) => {
+      const percentLiknossForTesting = 1; //for testing
+      const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
+      isUseGtfsForTesting =
+        randomNumber <= percentLiknossForTesting ? true : false;
+
+      /* const randomIntFromInterval = (min: number, max: number) => {
         const num = Math.floor(Math.random() * (max - min + 1) + min);
         if (num < 10) {
           return '0' + num;
@@ -63,22 +71,65 @@ export class TripService {
             locations.includes(route.loc_destination),
         );
       const currRoute =
-        routes[Math.floor(Math.random() * 30 /* routes.length */)];
+        routes[Math.floor(Math.random() * 30)];
       dto.location_origin = currRoute.loc_origin;
       dto.location_destination = currRoute.loc_destination;
       dto.date = `2023-${randomIntFromInterval(10, 12)}-${randomIntFromInterval(
         1,
         30,
-      )}`;
+      )}`; */
+      const routes = await this.routeService.findAllRoutes();
+      const favoriteRoutesIds = [
+        1148, 409, 1057, 16, 487, 164, 685, 396, 884, 79,
+      ].sort();
+      const favoriteDates = [
+        '2023-07-20',
+        '2023-08-01',
+        '2023-08-15',
+        '2023-09-01',
+        '2023-09-15',
+        '2023-10-01',
+        '2023-10-15',
+        '2023-11-01',
+        '2023-11-15',
+        '2023-12-01',
+      ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      const favoriteRoutes = routes.filter((r) =>
+        favoriteRoutesIds.includes(r.id),
+      );
+      const randIndexRoute = Math.floor(Math.random() * favoriteRoutes.length);
+      console.log({ randIndexRoute });
+      const randIndexDate = Math.floor(Math.random() * favoriteDates.length);
+      console.log({ randIndexDate });
+      console.log('favoriteRoutes.length: ', favoriteRoutes.length);
+      const currRoute = favoriteRoutes[randIndexRoute];
+      console.log({ currRoute });
+      dto.location_origin = currRoute.loc_origin;
+      dto.location_destination = currRoute.loc_destination;
+      dto.date = favoriteDates[randIndexDate];
+      console.log({ dto });
     }
+    ////////////////////////////////////////////////////////////////////////////////////////
     console.log({ dto });
+    console.log({ isUseGtfsForTesting });
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
     this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
-    if (fromCache) {
-      await this.gtfsService.validationGtfsTrip(fromCache);
-      this.logger.verbose(' Return from Redis!');
-      return { trips: fromCache, from: 'Redis' };
+    console.log(typeof fromCache); //object
+    console.log({ fromCache });
+    //console.log(fromCache.length);
+    if (fromCache && fromCache.length !== 0) {
+      const gtfs = isUseGtfsForTesting
+        ? await this.gtfsService.validationGtfsTrip(fromCache)
+        : true;
+      console.log({ gtfs });
+      if (gtfs) {
+        this.logger.verbose(' Return from Redis!');
+        return { trips: fromCache, from: 'Redis' };
+      } else {
+        this.logger.verbose('REDIS BRANCH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+        return this.getTripsFromLinkossToDbAndCache(dto);
+      }
     } else {
       this.logger.verbose(' Cache empty!');
       /* await this.liknossQueue.add(
@@ -93,9 +144,23 @@ export class TripService {
         dto.location_destination,
         dto.date,
       );
-      await this.cacheSet(redisKey, fromDb);
-      this.logger.verbose(' Return from Postgres!');
-      return { trips: fromDb, from: 'Postgres' };
+
+      /////////////////
+      const gtfs = isUseGtfsForTesting
+        ? await this.gtfsService.validationGtfsTrip(fromDb)
+        : true;
+      console.log({ gtfs });
+      if (gtfs && fromDb.length > 0) {
+        await this.cacheSet(redisKey, fromDb);
+        this.logger.verbose(' Return from Postgres!');
+        return { trips: fromDb, from: 'Postgres' };
+      } else {
+        this.logger.verbose(
+          'POSTGRES BRANCH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+        );
+        return this.getTripsFromLinkossToDbAndCache(dto);
+      }
+      /////////////////
     }
   }
 
@@ -484,5 +549,50 @@ export class TripService {
       });
     }
     console.log('Update Complete!');
+  }
+
+  async getTripsFromLinkossToDbAndCache(dto: TripsQueryDto) {
+    const liknossTrips = await this.getLinkossTripsForRoute(dto);
+
+    try {
+      //clean trips in db
+      await this.tripRepository.delAllByParams({
+        where: {
+          loc_origin: dto.location_origin,
+          loc_destination: dto.location_destination,
+          date_start: {
+            [Op.between]: [
+              new Date(dto.date).setUTCHours(0, 0, 0, 0),
+              new Date(new Date(dto.date).setUTCHours(23, 59, 59, 999)),
+            ],
+          },
+        },
+      });
+      const allPromises = [];
+      for (let i = 0; i < liknossTrips.length; i++) {
+        allPromises.push(this.tripRepository.create(liknossTrips[i]));
+      }
+      const outcomes = await Promise.allSettled(allPromises);
+      const tripsForRedis = (
+        await this.tripRepository.findAll(
+          dto.location_origin,
+          dto.location_destination,
+          dto.date,
+        )
+      ).map((el) => {
+        return el.get({ plain: true });
+      });
+      if (tripsForRedis?.length > 0) {
+        this.cacheSet(
+          `${dto.location_origin}-${dto.location_destination}-${dto.date}`,
+          tripsForRedis,
+        );
+        this.logger.log('CACHE UPDATED');
+      }
+      return { trips: tripsForRedis, from: 'Liknoss' };
+      //db check end
+    } catch (error) {
+      this.logger.error('Bad DB request.', error.stack);
+    }
   }
 }
