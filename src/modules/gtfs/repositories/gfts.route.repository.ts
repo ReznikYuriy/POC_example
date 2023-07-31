@@ -32,4 +32,17 @@ export default class GftsRouteRepository {
       },
     });
   }
+  async findAllByParams(
+    //agency_id: string,
+    loc_origin: string,
+    loc_destination: string,
+  ): Promise<GtfsRouteModel[]> {
+    return this.routeSchema.findAll({
+      where: {
+        //agency: { [Op.iLike]: agency_id },
+        loc_origin_name: { [Op.iLike]: loc_origin },
+        loc_destination_name: { [Op.iLike]: loc_destination },
+      },
+    });
+  }
 }

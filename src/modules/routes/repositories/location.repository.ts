@@ -33,4 +33,10 @@ export default class LocationRepository {
       truncate: true,
     });
   }
+
+  async findOneById(id: string): Promise<LocationModel> {
+    return this.locationSchema.findOne({
+      where: { id },
+    });
+  }
 }

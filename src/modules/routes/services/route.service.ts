@@ -34,6 +34,10 @@ export class RouteService {
     return this.locationsRepository.findAll();
   }
 
+  async findLocById(id: string): Promise<LocationModel> {
+    return this.locationsRepository.findOneById(id);
+  }
+
   async findAllRoutes(): Promise<RouteModel[]> {
     return this.routeRepository.findAll();
   }

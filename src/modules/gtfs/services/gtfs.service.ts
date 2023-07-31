@@ -5,6 +5,7 @@ import { CreateGtfsRouteDto } from '../dto/create.gtfs.route.dto';
 import GftsAgencyRepository from '../repositories/gfts.agency.repository';
 import { CreateGtfsAgencyDto } from '../dto/create.gtfs.agency.dto';
 import TripModel from 'src/modules/routes/shemas/trip.model';
+import GtfsRouteModel from '../shemas/gtds.route.model';
 
 @Injectable()
 export class GtfsService {
@@ -132,5 +133,18 @@ export class GtfsService {
       }
     }
     return true;
+  }
+
+  async getGtfsRecordsForSwagger(
+    //company_id: string,
+    loc_orig_name: string,
+    loc_dest_name: string,
+  ): Promise<GtfsRouteModel[]> {
+    const gtfsRecords = await this.gftsRouteRepository.findAllByParams(
+      //company_id,
+      loc_orig_name,
+      loc_dest_name,
+    );
+    return gtfsRecords;
   }
 }

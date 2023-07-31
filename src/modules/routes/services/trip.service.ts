@@ -28,9 +28,12 @@ export class TripService {
     private readonly gtfsService: GtfsService,
   ) {}
 
-  async searchTrips(
-    query: TripsQueryDto,
-  ): Promise<{ trips: TripModel[]; from: string }> {
+  async searchTrips(query: TripsQueryDto): Promise<{
+    trips: TripModel[];
+    from: string;
+    GFTS_status: boolean;
+    GTFS_records: any[];
+  }> {
     let isUseGtfsForTesting = true;
     const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
     console.log({ randomNumber });
@@ -134,6 +137,15 @@ export class TripService {
     ////////////////////////////////////////////////////////////////////////////////////////
     console.log({ dto });
     console.log({ isUseGtfsForTesting });
+    ///////////////
+    const dto_loc_orig_name = await this.routeService.findLocById(
+      dto.location_origin,
+    );
+
+    const dto_loc_dest_name = await this.routeService.findLocById(
+      dto.location_destination,
+    );
+    ///////////////
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
     this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
@@ -147,10 +159,27 @@ export class TripService {
       console.log({ gtfs });
       if (gtfs) {
         this.logger.verbose(' Return from Redis!');
-        return { trips: fromCache, from: 'Redis' };
+        return {
+          trips: fromCache,
+          from: 'Redis',
+          GFTS_status: true,
+          GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
+            dto_loc_orig_name.name,
+            dto_loc_dest_name.name,
+          ),
+        };
       } else {
         this.logger.verbose('REDIS BRANCH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-        return this.getTripsFromLinkossToDbAndCache(dto);
+        const tripsFromLiknossAfterUpd =
+          await this.getTripsFromLinkossToDbAndCache(dto);
+        return {
+          ...tripsFromLiknossAfterUpd,
+          GFTS_status: false,
+          GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
+            dto_loc_orig_name.name,
+            dto_loc_dest_name.name,
+          ),
+        };
       }
     } else {
       this.logger.verbose(' Cache empty!');
@@ -175,12 +204,29 @@ export class TripService {
       if (gtfs && fromDb.length > 0) {
         await this.cacheSet(redisKey, fromDb);
         this.logger.verbose(' Return from Postgres!');
-        return { trips: fromDb, from: 'Postgres' };
+        return {
+          trips: fromDb,
+          from: 'Postgres',
+          GFTS_status: true,
+          GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
+            dto_loc_orig_name.name,
+            dto_loc_dest_name.name,
+          ),
+        };
       } else {
         this.logger.verbose(
           'POSTGRES BRANCH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
         );
-        return this.getTripsFromLinkossToDbAndCache(dto);
+        const tripsFromLiknossAfterUpd =
+          await this.getTripsFromLinkossToDbAndCache(dto);
+        return {
+          ...tripsFromLiknossAfterUpd,
+          GFTS_status: false,
+          GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
+            dto_loc_orig_name.name,
+            dto_loc_dest_name.name,
+          ),
+        };
       }
       /////////////////
     }
