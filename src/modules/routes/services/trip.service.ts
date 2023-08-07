@@ -675,6 +675,59 @@ export class TripService {
   }
 
   async getPricing(dto: PricingTripDto): Promise<any> {
+    const accommodationArray = [];
+    const acc_pass_ids = new Set();
+    for (const el of dto.passengers) {
+      acc_pass_ids.add(el.accommodation_id);
+    }
+    for (const id of acc_pass_ids) {
+      const accommodationAnalysises = dto.passengers
+        .filter((el) => el.accommodation_id === id)
+        .map((acc) => ({
+          index: 1,
+          passengerData: {
+            surname: 'TEST',
+            name: 'TEST',
+            nationality: 'GR',
+            birthDate: '1974-05-18',
+            documentNumber: '123456',
+            type: 'AD',
+            sexType: acc.sex,
+          },
+        }));
+      const elem = {
+        idOrCode: id,
+        accommodationRequestType: 'COMPLETE',
+        quantity: 1,
+        bedType: 'NO_PREFERENCE',
+        accommodationRequestAnalysises: [...accommodationAnalysises],
+      };
+      accommodationArray.push(elem);
+    }
+    const acc_veh_ids = new Set();
+    for (const el of dto.vehicles) {
+      acc_veh_ids.add(el.accommodation_id);
+    }
+    for (const id of acc_veh_ids) {
+      const accommodationAnalysises = dto.vehicles
+        .filter((el) => el.accommodation_id === id)
+        .map((acc) => ({
+          index: 1,
+          vehicleData: {
+            length: acc.length || 0,
+            plateNumber: 'YNB2821',
+            nationality: 'GR',
+            registrationNumber: 'SSSS',
+          },
+        }));
+      const elem = {
+        idOrCode: id,
+        accommodationRequestType: 'VEHICLE',
+        quantity: 1,
+        accommodationRequestAnalysises: [...accommodationAnalysises],
+      };
+      accommodationArray.push(elem);
+    }
     const reqBody = {
       leader: {
         firstName: 'TEST BOOKING ONE CLICK',
@@ -703,80 +756,7 @@ export class TripService {
               abbreviation: dto.company_code,
             },
           },
-          accommodationRequests: [
-            {
-              idOrCode: 'B3',
-              accommodationRequestType: 'COMPLETE',
-              quantity: 1,
-              bedType: 'NO_PREFERENCE',
-              accommodationRequestAnalysises: [
-                {
-                  index: 1,
-                  passengerData: {
-                    surname: 'TEST',
-                    name: 'TEST',
-                    nationality: 'GR',
-                    birthDate: '1974-05-18',
-                    documentNumber: '123456',
-                    type: 'AD',
-                    sexType: 'MALE',
-                  },
-                },
-                {
-                  index: 1,
-                  passengerData: {
-                    surname: 'TEST',
-                    name: 'REST',
-                    nationality: 'GR',
-                    birthDate: '2016-05-18',
-                    documentNumber: '123456',
-                    type: 'CH',
-                    sexType: 'MALE',
-                  },
-                },
-                {
-                  index: 1,
-                  passengerData: {
-                    surname: 'TEST',
-                    name: 'REST',
-                    nationality: 'GR',
-                    birthDate: '2016-05-18',
-                    documentNumber: '123456',
-                    type: 'CH',
-                    sexType: 'MALE',
-                  },
-                },
-                {
-                  index: 1,
-                  passengerData: {
-                    surname: 'TEST',
-                    name: 'TEST',
-                    nationality: 'GR',
-                    birthDate: '1974-05-18',
-                    documentNumber: '123456',
-                    type: 'AD',
-                    sexType: 'MALE',
-                  },
-                },
-              ],
-            },
-            {
-              idOrCode: 'CAR',
-              accommodationRequestType: 'VEHICLE',
-              quantity: 1,
-              accommodationRequestAnalysises: [
-                {
-                  index: 1,
-                  vehicleData: {
-                    length: 425,
-                    plateNumber: 'YNB2821',
-                    nationality: 'GR',
-                    registrationNumber: 'SSSS',
-                  },
-                },
-              ],
-            },
-          ],
+          accommodationRequests: [...accommodationArray],
         },
       ],
     };

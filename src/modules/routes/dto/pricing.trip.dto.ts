@@ -1,11 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDateString,
-  IsInt,
   IsNumberString,
-  IsOptional,
   IsString,
+  IsArray,
 } from 'class-validator';
+import PassengerAccommodationInterface from '../shemas/passenger.accomodation.interface';
+import VehicleAccommodationInterface from '../shemas/vehicle.accomodation.interface';
 
 export class PricingTripDto {
   @ApiProperty({
@@ -42,33 +43,16 @@ export class PricingTripDto {
   })
   @IsString()
   company_code: string;
-  /* 
-  @ApiProperty({
-    type: String,
-  })
-  @IsDateString()
-  date: string;
 
   @ApiProperty({
-    required: false,
-    type: Number,
+    type: [PassengerAccommodationInterface],
   })
-  @IsOptional()
-  @IsInt()
-  passengers?: number;
+  @IsArray()
+  passengers: [PassengerAccommodationInterface];
 
   @ApiProperty({
-    required: false,
-    type: Number,
+    type: [VehicleAccommodationInterface],
   })
-  @IsOptional()
-  @IsInt()
-  vehicles?: number;
-
-  @ApiProperty({
-    type: String,
-  })
-  @IsString()
-  company: string;
- */
+  @IsArray()
+  vehicles: [VehicleAccommodationInterface];
 }
