@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import GtfsRouteModel from '../shemas/gtds.route.model';
+import GtfsRouteModel from '../shemas/gtfs.route.model';
 import { CreateGtfsRouteDto } from '../dto/create.gtfs.route.dto';
 
 @Injectable()
@@ -21,12 +21,21 @@ export default class GftsRouteRepository {
     loc_destination: string,
     dep_time: string,
     arr_time: string,
+    guiOriginName: string,
+    guiDestName: string,
   ): Promise<GtfsRouteModel> {
     return this.routeSchema.findOne({
       where: {
         agency: { [Op.iLike]: agency_id },
-        loc_origin_name: { [Op.iLike]: loc_origin },
-        loc_destination_name: { [Op.iLike]: loc_destination },
+        loc_origin_name: {
+          [Op.or]: [{ [Op.iLike]: loc_origin }, { [Op.iLike]: guiOriginName }],
+        },
+        loc_destination_name: {
+          [Op.or]: [
+            { [Op.iLike]: loc_destination },
+            { [Op.iLike]: guiDestName },
+          ],
+        },
         departure_time: dep_time,
         arrival_time: arr_time,
       },
@@ -36,12 +45,21 @@ export default class GftsRouteRepository {
     //agency_id: string,
     loc_origin: string,
     loc_destination: string,
+    guiOriginName: string,
+    guiDestName: string,
   ): Promise<GtfsRouteModel[]> {
     return this.routeSchema.findAll({
       where: {
         //agency: { [Op.iLike]: agency_id },
-        loc_origin_name: { [Op.iLike]: loc_origin },
-        loc_destination_name: { [Op.iLike]: loc_destination },
+        loc_origin_name: {
+          [Op.or]: [{ [Op.iLike]: loc_origin }, { [Op.iLike]: guiOriginName }],
+        },
+        loc_destination_name: {
+          [Op.or]: [
+            { [Op.iLike]: loc_destination },
+            { [Op.iLike]: guiDestName },
+          ],
+        },
       },
     });
   }

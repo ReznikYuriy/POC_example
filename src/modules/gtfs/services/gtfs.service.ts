@@ -5,13 +5,16 @@ import { CreateGtfsRouteDto } from '../dto/create.gtfs.route.dto';
 import GftsAgencyRepository from '../repositories/gfts.agency.repository';
 import { CreateGtfsAgencyDto } from '../dto/create.gtfs.agency.dto';
 import TripModel from 'src/modules/routes/shemas/trip.model';
-import GtfsRouteModel from '../shemas/gtds.route.model';
+import GtfsRouteModel from '../shemas/gtfs.route.model';
+import { CreateGtfsPortDto } from '../dto/create.gtfs.port.dto';
+import GftsPortRepository from '../repositories/gfts.port.repository';
 
 @Injectable()
 export class GtfsService {
   constructor(
     private readonly gftsRouteRepository: GftsRouteRepository,
     private readonly gftsAgencyRepository: GftsAgencyRepository,
+    private readonly gftsPortRepository: GftsPortRepository,
   ) {}
   async uploadRoutes(file: Express.Multer.File) {
     const csvJson = await csv({
@@ -101,6 +104,30 @@ export class GtfsService {
     return csvJson;
   }
 
+  async uploadPorts(file: Express.Multer.File) {
+    const csvJson = await csv({
+      colParser: {
+        ['Code']: 'string',
+        ['Country']: 'string',
+        ['English']: 'string',
+      },
+      checkType: true,
+    }).fromString(file.buffer.toString());
+    for (let i = 0; i < csvJson.length; i++) {
+      try {
+        const body: CreateGtfsPortDto = {
+          id: csvJson[i].Code,
+          name: csvJson[i].English,
+          country: csvJson[i].Country,
+        };
+        await this.gftsPortRepository.create(body);
+      } catch (err) {
+        console.log(err.message);
+      }
+    }
+    return csvJson;
+  }
+
   async validationGtfsTrip(trips: TripModel[]): Promise<boolean> {
     const getTimeToString = (_date: Date): string => {
       const date = new Date(_date);
@@ -115,6 +142,12 @@ export class GtfsService {
     };
     for (let i = 0; i < trips.length; i++) {
       const trip = trips[i]; /* .get({ plain: true }) */
+      const guiOriginName = (
+        await this.gftsPortRepository.findById(trip.loc_origin)
+      ).name;
+      const guiDestName = (
+        await this.gftsPortRepository.findById(trip.loc_destination)
+      ).name;
       console.log(trip.company_id);
       console.log(trip.loc_orig.name);
       console.log(trip.loc_dest.name);
@@ -126,6 +159,8 @@ export class GtfsService {
         trip.loc_dest.name,
         getTimeToString(trip.date_start),
         getTimeToString(trip.date_end),
+        guiOriginName,
+        guiDestName,
       );
       console.log({ gtfsTrip });
       if (!gtfsTrip) {
@@ -139,11 +174,20 @@ export class GtfsService {
     //company_id: string,
     loc_orig_name: string,
     loc_dest_name: string,
+    loc_origin: string,
+    loc_destination: string,
   ): Promise<GtfsRouteModel[]> {
+    const guiOriginName = (await this.gftsPortRepository.findById(loc_origin))
+      .name;
+    const guiDestName = (
+      await this.gftsPortRepository.findById(loc_destination)
+    ).name;
     const gtfsRecords = await this.gftsRouteRepository.findAllByParams(
       //company_id,
       loc_orig_name,
       loc_dest_name,
+      guiOriginName,
+      guiDestName,
     );
     return gtfsRecords;
   }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import GtfsAgencyModel from '../shemas/gtds.agency.model ';
+import GtfsAgencyModel from '../shemas/gtfs.agency.model ';
 import { CreateGtfsAgencyDto } from '../dto/create.gtfs.agency.dto';
 
 @Injectable()

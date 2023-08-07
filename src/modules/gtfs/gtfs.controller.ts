@@ -54,4 +54,25 @@ export class GtfsController {
   async uploadAgencyList(@UploadedFile() file: Express.Multer.File) {
     return this.gtfsService.uploadAgencies(file);
   }
+
+  @ApiResponse({
+    status: 200,
+  })
+  @Post('parse/ports')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPortsList(@UploadedFile() file: Express.Multer.File) {
+    return this.gtfsService.uploadPorts(file);
+  }
 }

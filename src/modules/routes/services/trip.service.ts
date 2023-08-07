@@ -166,6 +166,8 @@ export class TripService {
           GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
             dto_loc_orig_name.name,
             dto_loc_dest_name.name,
+            dto.location_origin,
+            dto.location_destination,
           ),
         };
       } else {
@@ -178,6 +180,8 @@ export class TripService {
           GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
             dto_loc_orig_name.name,
             dto_loc_dest_name.name,
+            dto.location_origin,
+            dto.location_destination,
           ),
         };
       }
@@ -211,6 +215,8 @@ export class TripService {
           GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
             dto_loc_orig_name.name,
             dto_loc_dest_name.name,
+            dto.location_origin,
+            dto.location_destination,
           ),
         };
       } else {
@@ -225,6 +231,8 @@ export class TripService {
           GTFS_records: await this.gtfsService.getGtfsRecordsForSwagger(
             dto_loc_orig_name.name,
             dto_loc_dest_name.name,
+            dto.location_origin,
+            dto.location_destination,
           ),
         };
       }
