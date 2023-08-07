@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { RouteService } from './services/route.service';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { OutputLocationDto } from './dto/output.location.dto';
@@ -7,6 +7,7 @@ import { TripService } from './services/trip.service';
 import { TripsQueryDto } from './dto/query.trip.dto';
 import { OutputTripDto } from './dto/output.trip.dto';
 import { TripCompanyQueryDto } from './dto/query.trip.company.dto';
+import { PricingTripDto } from './dto/pricing.trip.dto';
 
 @ApiTags('routes')
 @Controller('routes')
@@ -50,5 +51,14 @@ export class RoutesController {
   @Get('trip-with-company')
   async findTripByCompany(@Query() query: TripCompanyQueryDto) {
     return this.tripService.searchTripWithDetails(query);
+  }
+
+  @ApiOkResponse({
+    status: 201,
+    //type: [OutputTripDto],
+  })
+  @Post('pricing')
+  async getPricingForTrip(@Body() dto: PricingTripDto): Promise<any> {
+    return this.tripService.getPricing(dto);
   }
 }

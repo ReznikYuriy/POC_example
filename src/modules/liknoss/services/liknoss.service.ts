@@ -46,4 +46,14 @@ export class LiknossService {
     );
     return result;
   }
+
+  async getPricing(body) {
+    const result = await this.apiClient.request(
+      `pricing`,
+      HttpMethods.POST,
+      '',
+      body,
+    );
+    return result;
+  }
 }

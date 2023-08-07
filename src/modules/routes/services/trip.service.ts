@@ -14,6 +14,7 @@ import { Op } from 'sequelize';
 import RouteModel from '../shemas/route.model';
 import { TripCompanyQueryDto } from '../dto/query.trip.company.dto';
 import { GtfsService } from 'src/modules/gtfs/services/gtfs.service';
+import { PricingTripDto } from '../dto/pricing.trip.dto';
 
 @Injectable()
 export class TripService {
@@ -541,7 +542,8 @@ export class TripService {
     );
     console.log(liknossTrips);
     console.log(company);
-    const tripToOrder = liknossTrips.find((tr) => tr.company === company);
+    //liknossTrips.map((tr) => console.log(tr));
+    const tripToOrder = liknossTrips.find((tr) => tr.company_id === company);
     console.log({ tripToOrder });
     if (!tripToOrder) {
       throw new ConflictException('Trip for these parameters is empty.');
@@ -670,5 +672,115 @@ export class TripService {
     } catch (error) {
       this.logger.error('Bad DB request.', error.stack);
     }
+  }
+
+  async getPricing(dto: PricingTripDto): Promise<any> {
+    const reqBody = {
+      leader: {
+        firstName: 'TEST BOOKING ONE CLICK',
+        lastName: 'TEST BOOKING ONE CLICK',
+        mobile: '+917609876289',
+        email: 'testbookingoneclick@yopmail.com',
+        address: {
+          line: '',
+          zipCode: '',
+          city: '',
+          country: '',
+        },
+      },
+      trips: [
+        {
+          departureDateTime: dto.departure_date_time,
+          origin: {
+            idOrCode: dto.loc_origin_code,
+          },
+          destination: {
+            idOrCode: dto.loc_destination_code,
+          },
+          vessel: {
+            idOrCode: dto.vessel_id,
+            company: {
+              abbreviation: dto.company_code,
+            },
+          },
+          accommodationRequests: [
+            {
+              idOrCode: 'B3',
+              accommodationRequestType: 'COMPLETE',
+              quantity: 1,
+              bedType: 'NO_PREFERENCE',
+              accommodationRequestAnalysises: [
+                {
+                  index: 1,
+                  passengerData: {
+                    surname: 'TEST',
+                    name: 'TEST',
+                    nationality: 'GR',
+                    birthDate: '1974-05-18',
+                    documentNumber: '123456',
+                    type: 'AD',
+                    sexType: 'MALE',
+                  },
+                },
+                {
+                  index: 1,
+                  passengerData: {
+                    surname: 'TEST',
+                    name: 'REST',
+                    nationality: 'GR',
+                    birthDate: '2016-05-18',
+                    documentNumber: '123456',
+                    type: 'CH',
+                    sexType: 'MALE',
+                  },
+                },
+                {
+                  index: 1,
+                  passengerData: {
+                    surname: 'TEST',
+                    name: 'REST',
+                    nationality: 'GR',
+                    birthDate: '2016-05-18',
+                    documentNumber: '123456',
+                    type: 'CH',
+                    sexType: 'MALE',
+                  },
+                },
+                {
+                  index: 1,
+                  passengerData: {
+                    surname: 'TEST',
+                    name: 'TEST',
+                    nationality: 'GR',
+                    birthDate: '1974-05-18',
+                    documentNumber: '123456',
+                    type: 'AD',
+                    sexType: 'MALE',
+                  },
+                },
+              ],
+            },
+            {
+              idOrCode: 'CAR',
+              accommodationRequestType: 'VEHICLE',
+              quantity: 1,
+              accommodationRequestAnalysises: [
+                {
+                  index: 1,
+                  vehicleData: {
+                    length: 425,
+                    plateNumber: 'YNB2821',
+                    nationality: 'GR',
+                    registrationNumber: 'SSSS',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const liknossReq = await this.liknossService.getPricing(reqBody);
+    return liknossReq;
   }
 }
