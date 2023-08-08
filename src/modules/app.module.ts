@@ -10,9 +10,11 @@ import TripModel from './routes/shemas/trip.model';
 import * as redisStore from 'cache-manager-redis-store';
 import { BullModule } from '@nestjs/bull';
 import { GtfsModule } from './gtfs/gtfs.module';
+import { BookingModule } from './booking/booking.module';
 import GtfsRouteModel from './gtfs/shemas/gtfs.route.model';
 import GtfsAgencyModel from './gtfs/shemas/gtfs.agency.model ';
 import GtfsPortModel from './gtfs/shemas/gtfs.port.model';
+import BookingModel from './booking/shemas/booking.model';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import GtfsPortModel from './gtfs/shemas/gtfs.port.model';
         GtfsRouteModel,
         GtfsAgencyModel,
         GtfsPortModel,
+        BookingModel,
       ],
     }),
     CacheModule.register({
@@ -46,6 +49,7 @@ import GtfsPortModel from './gtfs/shemas/gtfs.port.model';
     RoutesModule,
     LiknossModule,
     GtfsModule,
+    BookingModule,
   ],
   controllers: [],
   providers: [],
