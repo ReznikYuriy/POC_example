@@ -131,8 +131,6 @@ export class GtfsService {
   async validationGtfsTrip(trips: TripModel[]): Promise<boolean> {
     const getTimeToString = (_date: Date): string => {
       const date = new Date(_date);
-      //console.log({ date });
-      //console.log(typeof date);
       const hh = date.getHours() < 10 ? '0' + date.getHours() : date.getHours();
       const mm =
         date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes();
@@ -148,11 +146,11 @@ export class GtfsService {
       const guiDestName = (
         await this.gftsPortRepository.findById(trip.loc_destination)
       ).name;
-      console.log(trip.company_id);
+      /* console.log(trip.company_id);
       console.log(trip.loc_orig.name);
       console.log(trip.loc_dest.name);
       console.log(getTimeToString(trip.date_start));
-      console.log(getTimeToString(trip.date_end));
+      console.log(getTimeToString(trip.date_end)); */
       const gtfsTrip = await this.gftsRouteRepository.findByParams(
         trip.company_id,
         trip.loc_orig.name,
@@ -162,7 +160,7 @@ export class GtfsService {
         guiOriginName,
         guiDestName,
       );
-      console.log({ gtfsTrip });
+      //console.log({ gtfsTrip });
       if (!gtfsTrip) {
         return false;
       }
@@ -171,7 +169,6 @@ export class GtfsService {
   }
 
   async getGtfsRecordsForSwagger(
-    //company_id: string,
     loc_orig_name: string,
     loc_dest_name: string,
     loc_origin: string,
@@ -183,7 +180,6 @@ export class GtfsService {
       await this.gftsPortRepository.findById(loc_destination)
     ).name;
     const gtfsRecords = await this.gftsRouteRepository.findAllByParams(
-      //company_id,
       loc_orig_name,
       loc_dest_name,
       guiOriginName,

@@ -150,14 +150,12 @@ export class TripService {
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
     this.logger.log({ redisKey });
     const fromCache = await this.getCache(redisKey);
-    console.log(typeof fromCache); //object
-    console.log({ fromCache });
     //console.log(fromCache.length);
     if (fromCache && fromCache.length !== 0) {
       const gtfs = isUseGtfsForTesting
         ? await this.gtfsService.validationGtfsTrip(fromCache)
         : true;
-      console.log({ gtfs });
+      //console.log({ gtfs });
       if (gtfs) {
         this.logger.verbose(' Return from Redis!');
         return {
@@ -205,7 +203,7 @@ export class TripService {
       const gtfs = isUseGtfsForTesting
         ? await this.gtfsService.validationGtfsTrip(fromDb)
         : true;
-      console.log({ gtfs });
+      //console.log({ gtfs });
       if (gtfs && fromDb.length > 0) {
         await this.cacheSet(redisKey, fromDb);
         this.logger.verbose(' Return from Postgres!');
@@ -710,7 +708,7 @@ export class TripService {
     }
     for (const id of acc_veh_ids) {
       const accommodationAnalysises = dto.vehicles
-        .filter((el) => el.accommodation_id === id)
+        .filter((el) => el['accommodation_id'] === id)
         .map((acc) => ({
           index: 1,
           vehicleData: {

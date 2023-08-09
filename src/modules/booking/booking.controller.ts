@@ -26,4 +26,13 @@ export class BookingController {
   findAll() {
     return this.bookingService.findAll();
   }
+
+  @ApiOkResponse({
+    status: 200,
+    type: OutputBookingDto,
+  })
+  @Get('jmeter')
+  testingRoute() {
+    return this.bookingService.testingJMeter();
+  }
 }

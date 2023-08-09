@@ -54,5 +54,5 @@ export class PricingTripDto {
     type: [VehicleAccommodationInterface],
   })
   @IsArray()
-  vehicles: [VehicleAccommodationInterface];
+  vehicles: [VehicleAccommodationInterface] | [];
 }

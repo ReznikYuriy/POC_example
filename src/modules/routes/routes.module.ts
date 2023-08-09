@@ -40,5 +40,6 @@ import { GtfsModule } from '../gtfs/gtfs.module';
     TripRepository,
     LiknossQueueProcessor,
   ],
+  exports: [TripService],
 })
 export class RoutesModule {}
