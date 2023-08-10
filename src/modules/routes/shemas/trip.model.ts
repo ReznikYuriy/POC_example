@@ -2,11 +2,13 @@ import {
   BelongsTo,
   Column,
   DataType,
+  Default,
   ForeignKey,
   Model,
   Table,
 } from 'sequelize-typescript';
 import LocationModel from './location.model';
+import TripAccommodationInterface from './trip.accomodation.interface';
 
 @Table({ tableName: 'trips' })
 export default class TripModel extends Model<TripModel> {
@@ -51,11 +53,22 @@ export default class TripModel extends Model<TripModel> {
   })
   company_id: string;
 
+  @Column({
+    type: DataType.STRING,
+  })
+  vessel_id: string;
+
   @Column({ type: DataType.INTEGER })
   price_basic: number;
 
   @Column({ type: DataType.INTEGER })
   price_discount: number;
+
+  @Default([])
+  @Column({
+    type: DataType.ARRAY(DataType.JSONB),
+  })
+  accommodations: TripAccommodationInterface[];
 
   @BelongsTo(() => LocationModel, 'loc_origin')
   loc_orig: LocationModel;

@@ -131,7 +131,10 @@ export class GtfsService {
   async validationGtfsTrip(trips: TripModel[]): Promise<boolean> {
     const getTimeToString = (_date: Date): string => {
       const date = new Date(_date);
-      const hh = date.getHours() < 10 ? '0' + date.getHours() : date.getHours();
+      const hh =
+        date.getUTCHours() + 2 < 10
+          ? '0' + (date.getUTCHours() + 2)
+          : date.getUTCHours() + 2;
       const mm =
         date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes();
       const ss =
@@ -146,11 +149,6 @@ export class GtfsService {
       const guiDestName = (
         await this.gftsPortRepository.findById(trip.loc_destination)
       ).name;
-      /* console.log(trip.company_id);
-      console.log(trip.loc_orig.name);
-      console.log(trip.loc_dest.name);
-      console.log(getTimeToString(trip.date_start));
-      console.log(getTimeToString(trip.date_end)); */
       const gtfsTrip = await this.gftsRouteRepository.findByParams(
         trip.company_id,
         trip.loc_orig.name,
@@ -160,7 +158,6 @@ export class GtfsService {
         guiOriginName,
         guiDestName,
       );
-      //console.log({ gtfsTrip });
       if (!gtfsTrip) {
         return false;
       }

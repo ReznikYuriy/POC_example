@@ -15,6 +15,7 @@ import RouteModel from '../shemas/route.model';
 import { TripCompanyQueryDto } from '../dto/query.trip.company.dto';
 import { GtfsService } from 'src/modules/gtfs/services/gtfs.service';
 import { PricingTripDto } from '../dto/pricing.trip.dto';
+import { PriceAccommodationType } from 'src/modules/booking/enum/price.accommodation.type.enum';
 
 @Injectable()
 export class TripService {
@@ -36,20 +37,19 @@ export class TripService {
     GTFS_records: any[];
   }> {
     let isUseGtfsForTesting = true;
-    const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
-    console.log({ randomNumber });
+    /* const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
+    console.log({ randomNumber }); */
     const dto = {
       ...query,
       passengers: query.passengers || 1,
       vehicles: query.vehicles || 0,
       isRandom: query.isRandom || false,
     };
-    console.log({ dto });
     if (
       (typeof dto.isRandom === 'boolean' && dto.isRandom === true) ||
       (typeof dto.isRandom === 'string' && dto.isRandom === 'true')
     ) {
-      const percentLiknossForTesting = 1; //for testing
+      const percentLiknossForTesting = 1; //for testing % 1
       const randomNumber = Math.floor(Math.random() * (100 - 1)) + 1; //for testing
       isUseGtfsForTesting =
         randomNumber <= percentLiknossForTesting ? true : false;
@@ -83,9 +83,9 @@ export class TripService {
         30,
       )}`; */
       const routes = await this.routeService.findAllRoutes();
-      const favoriteRoutesIds = [
+      /* const favoriteRoutesIds = [
         1148, 409, 1057, 16, 487, 164, 685, 396, 884, 79,
-      ].sort();
+      ].sort(); */
       const favoriteRoutesLoc = [
         { location_origin: 'JMK', location_destination: 'JTR' }, //Mykonos-Santorini (Thira)
         { location_origin: 'JNX', location_destination: 'JTR' }, //Naxos-Santorini (Thira)
@@ -98,9 +98,11 @@ export class TripService {
         { location_origin: 'MLO', location_destination: 'JNX' }, //Milos-Naxos
       ];
       const favoriteDates = [
-        '2023-07-20',
-        '2023-08-01',
+        /* '2023-07-20',
+        '2023-08-01', */
         '2023-08-15',
+        '2023-08-20',
+        '2023-08-25',
         '2023-09-01',
         '2023-09-15',
         '2023-10-01',
@@ -129,11 +131,10 @@ export class TripService {
       console.log({ randIndexDate });
       console.log('favoriteRoutes.length: ', favoriteRoutes.length);
       const currRoute = favoriteRoutes[randIndexRoute];
-      console.log({ currRoute });
+      //console.log({ currRoute });
       dto.location_origin = currRoute.loc_origin;
       dto.location_destination = currRoute.loc_destination;
       dto.date = favoriteDates[randIndexDate];
-      console.log({ dto });
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     console.log({ dto });
@@ -149,9 +150,12 @@ export class TripService {
     ///////////////
     const redisKey = `${dto.location_origin}-${dto.location_destination}-${dto.date}`;
     this.logger.log({ redisKey });
-    const fromCache = await this.getCache(redisKey);
-    //console.log(fromCache.length);
-    if (fromCache && fromCache.length !== 0) {
+    const fromCache: TripModel[] = await this.getCache(redisKey);
+    if (
+      fromCache &&
+      fromCache.length !== 0 &&
+      fromCache[0].accommodations.length !== 0
+    ) {
       const gtfs = isUseGtfsForTesting
         ? await this.gtfsService.validationGtfsTrip(fromCache)
         : true;
@@ -198,13 +202,12 @@ export class TripService {
         dto.location_destination,
         dto.date,
       );
-
       /////////////////
       const gtfs = isUseGtfsForTesting
         ? await this.gtfsService.validationGtfsTrip(fromDb)
         : true;
       //console.log({ gtfs });
-      if (gtfs && fromDb.length > 0) {
+      if (gtfs && fromDb.length > 0 && fromDb[0].accommodations.length !== 0) {
         await this.cacheSet(redisKey, fromDb);
         this.logger.verbose(' Return from Postgres!');
         return {
@@ -271,6 +274,8 @@ export class TripService {
     if (trips) {
       for (let i = 0; i < trips.length; i++) {
         const trip = trips[i];
+        const tripCompany =
+          companies[`${trip['vessel']['company']['abbreviation']}`];
         const tripBody: CreateTripDto = {
           loc_origin: trip['origin']['idOrCode'],
           loc_destination: trip['destination']['idOrCode'],
@@ -283,6 +288,45 @@ export class TripService {
           company:
             companies[`${trip['vessel']['company']['abbreviation']}`]['name'] ||
             '',
+          vessel_id: trip['vessel']['idOrCode'],
+          accommodations: (trip['accommodationAvailabilities'] as [])
+            .map((ac) => {
+              return {
+                accommodation_id: ac['accommodation']['idOrCode'],
+                availabilityType: ac['availabilityType'],
+                adultBasePrice: +ac['adultBasePrice'],
+                wholeBerthAvailability: +ac['wholeBerthAvailability'],
+                maleBerthAvailability: +ac['maleBerthAvailability'],
+                femaleBerthAvailability: +ac['femaleBerthAvailability'],
+              };
+            })
+            .map((acc) => {
+              if (
+                (
+                  tripCompany['accommodations']['passengers'] as 'object'
+                ).hasOwnProperty(`${acc['accommodation_id']}`)
+              ) {
+                return {
+                  ...acc,
+                  type: PriceAccommodationType.PASSENGER,
+                  name: tripCompany['accommodations']['passengers'][
+                    `${acc['accommodation_id']}`
+                  ]['name'],
+                };
+              } else if (
+                (
+                  tripCompany['accommodations']['vehicles'] as 'object'
+                ).hasOwnProperty(`${acc['accommodation_id']}`)
+              ) {
+                return {
+                  ...acc,
+                  type: PriceAccommodationType.VEHICLE,
+                  name: tripCompany['accommodations']['vehicles'][
+                    `${acc['accommodation_id']}`
+                  ]['name'],
+                };
+              }
+            }),
         };
         liknossTrips.push(tripBody);
       }
@@ -514,6 +558,8 @@ export class TripService {
     if (trips) {
       for (let i = 0; i < trips.length; i++) {
         const trip = trips[i];
+        const tripCompany =
+          companies[`${trip['vessel']['company']['abbreviation']}`];
         const tripBody: CreateTripDto = {
           loc_origin: trip['origin']['idOrCode'],
           loc_destination: trip['destination']['idOrCode'],
@@ -526,6 +572,45 @@ export class TripService {
             companies[`${trip['vessel']['company']['abbreviation']}`]['name'] ||
             '',
           company_id: trip['vessel']['company']['abbreviation'],
+          vessel_id: trip['vessel']['idOrCode'],
+          accommodations: (trip['accommodationAvailabilities'] as [])
+            .map((ac) => {
+              return {
+                accommodation_id: ac['accommodation']['idOrCode'],
+                availabilityType: ac['availabilityType'],
+                adultBasePrice: +ac['adultBasePrice'],
+                wholeBerthAvailability: +ac['wholeBerthAvailability'],
+                maleBerthAvailability: +ac['maleBerthAvailability'],
+                femaleBerthAvailability: +ac['femaleBerthAvailability'],
+              };
+            })
+            .map((acc) => {
+              if (
+                (
+                  tripCompany['accommodations']['passengers'] as 'object'
+                ).hasOwnProperty(`${acc['accommodation_id']}`)
+              ) {
+                return {
+                  ...acc,
+                  type: PriceAccommodationType.PASSENGER,
+                  name: tripCompany['accommodations']['passengers'][
+                    `${acc['accommodation_id']}`
+                  ]['name'],
+                };
+              } else if (
+                (
+                  tripCompany['accommodations']['vehicles'] as 'object'
+                ).hasOwnProperty(`${acc['accommodation_id']}`)
+              ) {
+                return {
+                  ...acc,
+                  type: PriceAccommodationType.VEHICLE,
+                  name: tripCompany['accommodations']['vehicles'][
+                    `${acc['accommodation_id']}`
+                  ]['name'],
+                };
+              }
+            }),
         };
         liknossTrips.push(tripBody);
       }
@@ -538,72 +623,24 @@ export class TripService {
         removeOnComplete: true,
       },
     );
-    console.log(liknossTrips);
-    console.log(company);
-    //liknossTrips.map((tr) => console.log(tr));
     const tripToOrder = liknossTrips.find((tr) => tr.company_id === company);
     console.log({ tripToOrder });
     if (!tripToOrder) {
       throw new ConflictException('Trip for these parameters is empty.');
     }
-    const tripCompany = companies[tripToOrder.company_id];
-    console.log({ tripCompany });
+    /* const tripCompany = companies[tripToOrder.company_id];
+    console.log({ tripCompany }); */
     const liknossTrip = trips.find(
       (tr) =>
         tr['vessel']['company']['abbreviation'] === tripToOrder.company_id,
     );
-    //////////////////
-    const tripAccommodations: any[] = (
-      liknossTrip['accommodationAvailabilities'] as []
-    )
-      .map((ac) => {
-        return {
-          accommodation_id: ac['accommodation']['idOrCode'],
-          availabilityType: ac['availabilityType'],
-          adultBasePrice: +ac['adultBasePrice'],
-          wholeBerthAvailability: +ac['wholeBerthAvailability'],
-          maleBerthAvailability: +ac['maleBerthAvailability'],
-          femaleBerthAvailability: +ac['femaleBerthAvailability'],
-        };
-      })
-      .map((acc) => {
-        if (
-          (
-            tripCompany['accommodations']['passengers'] as 'object'
-          ).hasOwnProperty(`${acc['accommodation_id']}`)
-        ) {
-          return {
-            ...acc,
-            type: 'passengers',
-            name: tripCompany['accommodations']['passengers'][
-              `${acc['accommodation_id']}`
-            ]['name'],
-          };
-        } else if (
-          (
-            tripCompany['accommodations']['vehicles'] as 'object'
-          ).hasOwnProperty(`${acc['accommodation_id']}`)
-        ) {
-          return {
-            ...acc,
-            type: 'vehicles',
-            name: tripCompany['accommodations']['vehicles'][
-              `${acc['accommodation_id']}`
-            ]['name'],
-          };
-        }
-      });
-
-    ////////////////////
     return {
       trip: {
         ...tripToOrder,
-        accommodations: tripAccommodations,
         basicPriceAnalysis: liknossTrip['basicPriceAnalysis'],
         discountPriceAnalysis: liknossTrip['discountPriceAnalysis'],
       },
       liknoss_trip: liknossTrip,
-      company: tripCompany,
     };
   }
 
@@ -760,5 +797,63 @@ export class TripService {
     };
     const liknossReq = await this.liknossService.getPricing(reqBody);
     return liknossReq;
+  }
+
+  async fillDbFavoriteTrips(): Promise<any> {
+    const routes = await this.routeService.findAllRoutes();
+    const favoriteRoutesLoc = [
+      { location_origin: 'JMK', location_destination: 'JTR' }, //Mykonos-Santorini (Thira)
+      { location_origin: 'JNX', location_destination: 'JTR' }, //Naxos-Santorini (Thira)
+      { location_origin: 'PAS', location_destination: 'JMK' }, //Paros-Mykonos
+      /*  { location_origin: 'JTR', location_destination: 'JSH' }, //Santorini (Thira)-Crete (Sitia)
+      { location_origin: 'JTR', location_destination: 'PAS' }, //Santorini (Thira)-Paros
+      { location_origin: 'SIF', location_destination: 'MLO' }, //Sifnos-Milos
+      { location_origin: 'IOS', location_destination: 'JMK' }, //Ios-Mykonos
+      { location_origin: 'IOS', location_destination: 'JTR' }, //Ios-Santorini (Thira)
+      { location_origin: 'MLO', location_destination: 'JNX' }, //Milos-Naxos */
+    ];
+    const favoriteDates = [
+      //'2023-08-15',
+      //'2023-08-20',
+      //'2023-08-25',
+      //'2023-09-01',
+      '2023-09-15',
+      /* '2023-10-01',
+      '2023-10-15',
+      '2023-11-01',
+      '2023-11-15',
+      '2023-12-01', */
+    ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const favoriteRoutes = [];
+    for (let i = 0; i < favoriteRoutesLoc.length; i++) {
+      const route = routes.find(
+        (el) =>
+          el.loc_origin === favoriteRoutesLoc[i].location_origin &&
+          el.loc_destination === favoriteRoutesLoc[i].location_destination,
+      );
+      if (route) {
+        favoriteRoutes.push(route);
+      }
+    }
+    for (const r of favoriteRoutes) {
+      for (const d of favoriteDates) {
+        const dto = {
+          location_origin: r.loc_origin,
+          location_destination: r.loc_destination,
+          date: d,
+          passengers: 1,
+          vehicles: 0,
+        };
+        /* const tripsFromLiknossAfterUpd =
+          await this.getTripsFromLinkossToDbAndCache(dto); */
+        await this.liknossQueue.add(
+          'get-trips-request',
+          { dto },
+          {
+            removeOnComplete: true,
+          },
+        );
+      }
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import TripAccommodationInterface from '../shemas/trip.accomodation.interface';
 
 export class CreateTripDto {
   @ApiProperty({
@@ -57,4 +58,16 @@ export class CreateTripDto {
   //@IsOptional()
   @IsString()
   company_id: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  @IsString()
+  vessel_id: string;
+
+  @ApiProperty({
+    type: [TripAccommodationInterface],
+  })
+  @IsArray()
+  accommodations: TripAccommodationInterface[];
 }

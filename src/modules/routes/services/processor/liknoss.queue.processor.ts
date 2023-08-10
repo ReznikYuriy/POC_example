@@ -90,7 +90,8 @@ export class LiknossQueueProcessor {
         checkTripInDb.date_start.getTime() ===
           new Date(job.data.tripBody.date_start).getTime() &&
         checkTripInDb.date_end.getTime() ===
-          new Date(job.data.tripBody.date_end).getTime()
+          new Date(job.data.tripBody.date_end).getTime() &&
+        checkTripInDb.vessel_id === job.data.tripBody.vessel_id
       ) {
         this.logger.verbose('TRIP IN DB ACTUAL');
       } else {
@@ -100,6 +101,8 @@ export class LiknossQueueProcessor {
           price_discount: job.data.tripBody.price_discount,
           date_start: job.data.tripBody.date_start,
           date_end: job.data.tripBody.date_end,
+          vessel_id: job.data.tripBody.vessel_id,
+          accommodations: job.data.tripBody.accommodations,
         });
         this.logger.verbose('UPDATE TRIP IN DB');
       }
