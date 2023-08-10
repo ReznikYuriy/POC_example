@@ -805,24 +805,24 @@ export class TripService {
       { location_origin: 'JMK', location_destination: 'JTR' }, //Mykonos-Santorini (Thira)
       { location_origin: 'JNX', location_destination: 'JTR' }, //Naxos-Santorini (Thira)
       { location_origin: 'PAS', location_destination: 'JMK' }, //Paros-Mykonos
-      /*  { location_origin: 'JTR', location_destination: 'JSH' }, //Santorini (Thira)-Crete (Sitia)
+      { location_origin: 'JTR', location_destination: 'JSH' }, //Santorini (Thira)-Crete (Sitia)
       { location_origin: 'JTR', location_destination: 'PAS' }, //Santorini (Thira)-Paros
       { location_origin: 'SIF', location_destination: 'MLO' }, //Sifnos-Milos
       { location_origin: 'IOS', location_destination: 'JMK' }, //Ios-Mykonos
       { location_origin: 'IOS', location_destination: 'JTR' }, //Ios-Santorini (Thira)
-      { location_origin: 'MLO', location_destination: 'JNX' }, //Milos-Naxos */
+      { location_origin: 'MLO', location_destination: 'JNX' }, //Milos-Naxos
     ];
     const favoriteDates = [
-      //'2023-08-15',
-      //'2023-08-20',
-      //'2023-08-25',
-      //'2023-09-01',
+      '2023-08-15',
+      '2023-08-20',
+      '2023-08-25',
+      '2023-09-01',
       '2023-09-15',
-      /* '2023-10-01',
+      '2023-10-01',
       '2023-10-15',
       '2023-11-01',
       '2023-11-15',
-      '2023-12-01', */
+      '2023-12-01',
     ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     const favoriteRoutes = [];
     for (let i = 0; i < favoriteRoutesLoc.length; i++) {
