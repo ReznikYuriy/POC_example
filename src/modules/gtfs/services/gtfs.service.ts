@@ -145,10 +145,18 @@ export class GtfsService {
       const trip = trips[i]; /* .get({ plain: true }) */
       const guiOriginName = (
         await this.gftsPortRepository.findById(trip.loc_origin)
-      ).name;
+      )?.name;
       const guiDestName = (
         await this.gftsPortRepository.findById(trip.loc_destination)
-      ).name;
+      )?.name;
+      if (
+        !guiOriginName ||
+        !guiDestName ||
+        !trip?.loc_orig?.name ||
+        !trip?.loc_dest?.name
+      ) {
+        return false;
+      }
       const gtfsTrip = await this.gftsRouteRepository.findByParams(
         trip.company_id,
         trip.loc_orig.name,
